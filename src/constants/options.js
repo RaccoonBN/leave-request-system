@@ -1,8 +1,8 @@
 export const DEPARTMENTS = [
-  'HR',
-  'Sales',
+  'GA',
+  'EC',
   'Academic',
-  'Marketing'
+  'PRC'
 ];
 
 export const LEAVE_TYPES = [
