@@ -15,6 +15,7 @@ function HRDashboard() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState(null);
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   const [search, setSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
@@ -63,6 +64,7 @@ function HRDashboard() {
     setFromDate('');
     setToDate('');
     setNotice(null);
+    setSelectedRequest(null);
   }
 
   function resetFilters() {
@@ -151,7 +153,7 @@ function HRDashboard() {
       'Ngày bắt đầu nghỉ': item.startDate,
       'Ngày quay lại làm việc': item.returnDate,
       'Số ngày nghỉ': item.totalDays,
-      'Buổi nghỉ': item.leaveSession,
+      'Thời gian nghỉ': item.leaveSession,
       'Lý do nghỉ': item.reason,
       'Người nhận bàn giao': item.handoverName,
       'Email người nhận bàn giao': item.handoverEmail,
@@ -182,228 +184,340 @@ function HRDashboard() {
 
   if (!loggedIn) {
     return (
-      <Card title="HR Dashboard">
-        <Alert type="info">
-          Khu vực dành cho HR xem toàn bộ danh sách đơn phép, trạng thái xử lý và xuất dữ liệu.
-        </Alert>
+      <section className="hr-login-page">
+        <div className="hr-login-panel">
+          <div className="hr-login-header">
+            <div>
+              <p className="dashboard-kicker">Phát triển bởi HR Team</p>
+              <h1>HR Dashboard</h1>
+              <p>Quản lý, theo dõi và xuất dữ liệu đơn nghỉ phép.</p>
+            </div>
 
-        {notice && <Alert type={notice.type}>{notice.message}</Alert>}
-
-        <form className="form-grid" onSubmit={handleLogin}>
-          <Field label="Mật khẩu HR *">
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Nhập mật khẩu HR Dashboard"
-              required
-            />
-          </Field>
-
-          <div className="actions full-row">
-            <button type="submit" className="btn primary" disabled={loading}>
-              {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
-            </button>
+            <div className="hr-login-logo">
+              <img src="/company-logo.png" alt="Company logo" />
+            </div>
           </div>
-        </form>
-      </Card>
+
+          <div className="hr-login-content">
+            <div className="hr-login-intro">
+              <span className="hr-login-badge">Private Area</span>
+
+              <h2>Đăng nhập khu vực HR</h2>
+
+              <p>
+                Dữ liệu đơn nghỉ phép chỉ hiển thị khi nhập đúng mật khẩu HR.
+                Vui lòng không chia sẻ quyền truy cập cho người không liên quan.
+              </p>
+
+              <div className="hr-login-points">
+                <div>
+                  <strong>01</strong>
+                  <span>Xem toàn bộ đơn phép</span>
+                </div>
+
+                <div>
+                  <strong>02</strong>
+                  <span>Theo dõi trạng thái duyệt</span>
+                </div>
+
+                <div>
+                  <strong>03</strong>
+                  <span>Xuất dữ liệu báo cáo</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="hr-login-form">
+              <h3>Đăng nhập</h3>
+              <p>Nhập mật khẩu để truy cập dashboard.</p>
+
+              {notice && <Alert type={notice.type}>{notice.message}</Alert>}
+
+              <form onSubmit={handleLogin}>
+                <Field label="Mật khẩu HR *">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Nhập mật khẩu HR Dashboard"
+                    required
+                  />
+                </Field>
+
+                <button type="submit" className="btn primary hr-login-btn" disabled={loading}>
+                  {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
     );
   }
 
   return (
-    <Card title="HR Dashboard">
+    <section className="hr-dashboard-page">
       {notice && <Alert type={notice.type}>{notice.message}</Alert>}
 
-      <div className="dashboard-topbar">
-        <div>
-          <p className="dashboard-kicker">Quản lý đơn nghỉ phép</p>
-          <h3>Danh sách đơn phép</h3>
-          <p className="muted">
-            Dashboard tự cập nhật mỗi 10 giây. Dữ liệu gốc được lưu trong Google Sheet.
-          </p>
+      <div className="hr-dashboard-header">
+        <div className="hr-dashboard-title-wrap">
+          <div className="hr-dashboard-logo">
+            <img src="/company-logo.png" alt="Company logo" />
+          </div>
+
+          <div>
+            <p className="dashboard-kicker">HR Workspace</p>
+            <h1>HR Dashboard</h1>
+            <p>
+              Quản lý đơn nghỉ phép tập trung, theo dõi trạng thái xử lý và xuất dữ liệu nhanh chóng.
+            </p>
+          </div>
         </div>
 
-        <div className="dashboard-actions">
-          <button className="btn ghost" type="button" onClick={() => fetchRequests(password, false)}>
-            {loading ? 'Đang tải...' : 'Làm mới'}
-          </button>
-
-          <button className="btn primary" type="button" onClick={exportExcel}>
-            Xuất Excel
-          </button>
-
-          <button className="btn ghost" type="button" onClick={handleLogout}>
-            Đăng xuất
-          </button>
-        </div>
+        <button className="btn danger hr-logout-btn" type="button" onClick={handleLogout}>
+          Đăng xuất
+        </button>
       </div>
 
-      <div className="dashboard-summary">
+      <div className="hr-summary-grid">
         <SummaryItem label="Tổng đơn hiển thị" value={summary.total} />
         <SummaryItem label="Đang chờ" value={summary.pending} />
         <SummaryItem label="Đã duyệt" value={summary.approved} />
         <SummaryItem label="Từ chối" value={summary.rejected} />
       </div>
 
-      <div className="filter-card">
-        <div className="dashboard-toolbar">
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Tìm mã đơn, tên, email, loại phép..."
-          />
+      <Card title="Danh sách đơn phép">
+        <div className="hr-list-head">
+          <div>
+            <p className="muted">
+              Dashboard tự cập nhật mỗi 10 giây. Dữ liệu gốc được lưu trong Google Sheet.
+            </p>
+          </div>
 
-          <select
-            value={departmentFilter}
-            onChange={(event) => setDepartmentFilter(event.target.value)}
-          >
-            <option value="">Tất cả bộ phận</option>
-            {DEPARTMENTS.map((department) => (
-              <option key={department} value={department}>
-                {department}
-              </option>
-            ))}
-          </select>
+          <div className="hr-list-actions">
+            <button className="btn ghost" type="button" onClick={() => fetchRequests(password, false)}>
+              {loading ? 'Đang tải...' : 'Làm mới'}
+            </button>
 
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-          >
-            <option value="">Tất cả trạng thái</option>
-            {FINAL_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-
-          <button className="btn ghost" type="button" onClick={resetFilters}>
-            Xóa lọc
-          </button>
+            <button className="btn primary" type="button" onClick={exportExcel}>
+              Xuất Excel
+            </button>
+          </div>
         </div>
 
-        <div className="dashboard-toolbar date-toolbar">
-          <Field label="Từ ngày bắt đầu nghỉ">
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(event) => setFromDate(event.target.value)}
-            />
-          </Field>
+        <div className="hr-filter-card">
+          <div className="hr-filter-grid">
+            <Field label="Tìm kiếm">
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Tìm mã đơn, tên, email, loại phép..."
+              />
+            </Field>
 
-          <Field label="Đến ngày bắt đầu nghỉ">
-            <input
-              type="date"
-              value={toDate}
-              onChange={(event) => setToDate(event.target.value)}
-            />
-          </Field>
+            <Field label="Bộ phận">
+              <select
+                value={departmentFilter}
+                onChange={(event) => setDepartmentFilter(event.target.value)}
+              >
+                <option value="">Tất cả bộ phận</option>
+                {DEPARTMENTS.map((department) => (
+                  <option key={department} value={department}>
+                    {department}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Trạng thái">
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+              >
+                <option value="">Tất cả trạng thái</option>
+                {FINAL_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Từ ngày bắt đầu nghỉ">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(event) => setFromDate(event.target.value)}
+              />
+            </Field>
+
+            <Field label="Đến ngày bắt đầu nghỉ">
+              <input
+                type="date"
+                value={toDate}
+                onChange={(event) => setToDate(event.target.value)}
+              />
+            </Field>
+
+            <div className="hr-filter-clear">
+              <button className="btn light" type="button" onClick={resetFilters}>
+                Xóa lọc
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <p className="table-note">
-        Đang hiển thị <strong>{filteredRequests.length}</strong> / {requests.length} đơn.
-      </p>
+        <p className="table-note">
+          Đang hiển thị <strong>{filteredRequests.length}</strong> / {requests.length} đơn.
+        </p>
 
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Mã đơn</th>
-              <th>Ngày gửi</th>
-              <th>Nhân sự</th>
-              <th>Bộ phận</th>
-              <th>Thông tin nghỉ</th>
-              <th>Bàn giao</th>
-              <th>Line Manager</th>
-              <th>HR Manager</th>
-              <th>Trạng thái cuối</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredRequests.length === 0 ? (
+        <div className="hr-table-wrap">
+          <table className="hr-table">
+            <thead>
               <tr>
-                <td colSpan="9">Chưa có dữ liệu phù hợp.</td>
+                <th>Mã đơn</th>
+                <th>Nhân sự</th>
+                <th>Nghỉ phép</th>
+                <th>Line Manager</th>
+                <th>HR Manager</th>
+                <th>Trạng thái</th>
+                <th>Chi tiết</th>
               </tr>
-            ) : (
-              filteredRequests.map((item) => (
-                <tr key={item.requestId}>
-                  <td>
-                    <strong>{item.requestId}</strong>
-                  </td>
+            </thead>
 
-                  <td>{item.createdAt}</td>
-
-                  <td>
-                    <strong>{item.fullName}</strong>
-                    <span>{item.employeeEmail}</span>
-                  </td>
-
-                  <td>
-                    <strong>{item.department}</strong>
-                    <span>{item.position}</span>
-                  </td>
-
-                  <td>
-                    <strong>{item.leaveType}</strong>
-                    <span>{item.startDate} → {item.returnDate}</span>
-                    <span>{item.totalDays} ngày - {item.leaveSession}</span>
-                    <span>Lý do: {item.reason}</span>
-                  </td>
-
-                  <td>
-                    <strong>{item.handoverName}</strong>
-                    <span>{item.handoverEmail}</span>
-                    {item.handoverPhone && <span>{item.handoverPhone}</span>}
-                    <span>{item.handoverDetails}</span>
-                  </td>
-
-                  <td>
-                    <StatusBadge status={item.lineStatus} />
-                    {item.lineDecisionAt && <span>{item.lineDecisionAt}</span>}
-
-                    {item.lineRejectReason && (
-                      <span className="reject-inline">
-                        Lý do: {item.lineRejectReason}
-                      </span>
-                    )}
-                  </td>
-
-                  <td>
-                    <StatusBadge status={item.hrStatus} />
-                    {item.hrDecisionAt && <span>{item.hrDecisionAt}</span>}
-
-                    {item.hrRejectReason && (
-                      <span className="reject-inline">
-                        Lý do: {item.hrRejectReason}
-                      </span>
-                    )}
-                  </td>
-
-                  <td>
-                    <StatusBadge status={item.finalStatus} />
-                    {item.updatedAt && <span>{item.updatedAt}</span>}
-
-                    {item.finalStatus === 'Line Manager từ chối' && item.lineRejectReason && (
-                      <span className="reject-inline">
-                        Lý do: {item.lineRejectReason}
-                      </span>
-                    )}
-
-                    {item.finalStatus === 'HR Manager từ chối' && item.hrRejectReason && (
-                      <span className="reject-inline">
-                        Lý do: {item.hrRejectReason}
-                      </span>
-                    )}
+            <tbody>
+              {filteredRequests.length === 0 ? (
+                <tr>
+                  <td colSpan="7">
+                    <div className="hr-empty-state">
+                      Chưa có đơn phù hợp với bộ lọc hiện tại.
+                    </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </Card>
+              ) : (
+                filteredRequests.map((item) => (
+                                
+                <tr key={item.requestId}>
+                <td>
+                    <strong className="hr-request-id">{item.requestId}</strong>
+                </td>
+
+                <td>
+                    <strong>{item.fullName}</strong>
+                </td>
+
+                <td>
+                    <strong>{item.leaveType}</strong>
+                </td>
+
+                <td>
+                    <StatusBadge status={item.lineStatus} />
+                </td>
+
+                <td>
+                    <StatusBadge status={item.hrStatus} />
+                </td>
+
+                <td>
+                    <StatusBadge status={item.finalStatus} />
+                </td>
+
+                <td>
+                    <button
+                    type="button"
+                    className="btn ghost btn-sm"
+                    onClick={() => setSelectedRequest(item)}
+                    >
+                    Xem chi tiết
+                    </button>
+                </td>
+                </tr>
+
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {selectedRequest && (
+        <div className="detail-modal-backdrop">
+          <div className="detail-modal">
+            <div className="detail-modal-header">
+              <div>
+                <p className="dashboard-kicker">Chi tiết đơn phép</p>
+                <h3>{selectedRequest.requestId}</h3>
+              </div>
+
+              <button
+                type="button"
+                className="btn ghost btn-sm"
+                onClick={() => setSelectedRequest(null)}
+              >
+                Đóng
+              </button>
+            </div>
+
+            <div className="detail-modal-status">
+              <StatusBadge status={selectedRequest.finalStatus} />
+              <span>Cập nhật: {selectedRequest.updatedAt || 'Chưa có thông tin'}</span>
+            </div>
+
+            <div className="detail-modal-grid">
+              <DetailItem label="Họ và tên" value={selectedRequest.fullName} />
+              <DetailItem label="Email nhân sự" value={selectedRequest.employeeEmail} />
+              <DetailItem label="Bộ phận" value={selectedRequest.department} />
+              <DetailItem label="Vị trí" value={selectedRequest.position} />
+
+              <DetailItem label="Loại nghỉ phép" value={selectedRequest.leaveType} />
+              <DetailItem label="Ngày bắt đầu nghỉ" value={selectedRequest.startDate} />
+              <DetailItem label="Ngày quay lại làm việc" value={selectedRequest.returnDate} />
+              <DetailItem label="Số ngày nghỉ" value={`${selectedRequest.totalDays} ngày`} />
+
+              <DetailItem label="Thời gian nghỉ" value={selectedRequest.leaveSession} wide />
+              <DetailItem label="Lý do nghỉ" value={selectedRequest.reason} wide />
+
+              <DetailItem label="Người nhận bàn giao" value={selectedRequest.handoverName} />
+              <DetailItem label="Email bàn giao" value={selectedRequest.handoverEmail} />
+              <DetailItem label="SĐT bàn giao" value={selectedRequest.handoverPhone || 'Không có'} />
+              <DetailItem label="Công việc bàn giao" value={selectedRequest.handoverDetails} wide />
+
+              <DetailItem label="Email Line Manager" value={selectedRequest.lineManagerEmail} />
+              <DetailItem label="Trạng thái Line Manager" value={selectedRequest.lineStatus} />
+              <DetailItem
+                label="Thời gian Line xử lý"
+                value={selectedRequest.lineDecisionAt || 'Chưa xử lý'}
+              />
+
+              <DetailItem label="Email HR Manager" value={selectedRequest.hrManagerEmail} />
+              <DetailItem label="Trạng thái HR Manager" value={selectedRequest.hrStatus} />
+              <DetailItem
+                label="Thời gian HR xử lý"
+                value={selectedRequest.hrDecisionAt || 'Chưa xử lý'}
+              />
+
+              {selectedRequest.lineRejectReason && (
+                <DetailItem
+                  label="Lý do Line từ chối"
+                  value={selectedRequest.lineRejectReason}
+                  wide
+                  danger
+                />
+              )}
+
+              {selectedRequest.hrRejectReason && (
+                <DetailItem
+                  label="Lý do HR từ chối"
+                  value={selectedRequest.hrRejectReason}
+                  wide
+                  danger
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -412,6 +526,17 @@ function SummaryItem({ label, value }) {
     <div className="summary-item">
       <span>{label}</span>
       <strong>{value}</strong>
+    </div>
+  );
+}
+
+function DetailItem({ label, value, wide = false, danger = false }) {
+  return (
+    <div className={wide ? 'modal-detail-item modal-detail-wide' : 'modal-detail-item'}>
+      <span>{label}</span>
+      <strong className={danger ? 'danger-text' : ''}>
+        {value || 'Chưa có thông tin'}
+      </strong>
     </div>
   );
 }

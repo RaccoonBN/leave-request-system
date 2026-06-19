@@ -26,7 +26,6 @@ function App() {
   if (isHRPage) {
     return (
       <main className="app-shell">
-        <Hero type="hr" />
         <HRDashboard />
       </main>
     );
