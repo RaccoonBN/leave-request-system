@@ -266,7 +266,7 @@ function HRDashboard() {
           </div>
 
           <div>
-            <p className="dashboard-kicker">HR Workspace</p>
+            <p className="dashboard-kicker">Phát triển bởi HR Team</p>
             <h1>HR Dashboard</h1>
             <p>
               Quản lý đơn nghỉ phép tập trung, theo dõi trạng thái xử lý và xuất dữ liệu nhanh chóng.
