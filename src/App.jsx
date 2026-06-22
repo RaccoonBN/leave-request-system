@@ -17,7 +17,6 @@ function App() {
   if (isDecisionPage) {
     return (
       <main className="app-shell">
-        <Hero type="decision" />
         <DecisionPage />
       </main>
     );
