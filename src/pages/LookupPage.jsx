@@ -38,8 +38,8 @@ function LookupPage() {
   }
 
   return (
-    <section className="stack">
-      <Card title="Tra cứu trạng thái đơn phép">
+<section className="lookup-page stack">
+        <Card title="Tra cứu trạng thái đơn phép">
         <Alert type="info">
           Nhập đúng <strong>Mã đơn phép</strong> và <strong>Email nhân sự</strong> đã dùng khi gửi đơn.
         </Alert>

@@ -1,104 +1,257 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { handleDecision } from '../api';
 import Card from '../components/Card';
 import Alert from '../components/Alert';
 
 function DecisionPage() {
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [status, setStatus] = useState('loading');
+  const [message, setMessage] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const payload = useMemo(() => {
-    const params = new URLSearchParams(window.location.search);
+  const hasAutoSubmitted = useRef(false);
+
+  const params = useMemo(() => {
+    const searchParams = new URLSearchParams(window.location.search);
 
     return {
-      role: params.get('role'),
-      decision: params.get('decision'),
-      requestId: params.get('requestId'),
-      token: params.get('token')
+      requestId: searchParams.get('requestId') || '',
+      role: searchParams.get('role') || '',
+      decision: searchParams.get('decision') || '',
+      token: searchParams.get('token') || ''
     };
   }, []);
 
-  const isReject = payload.decision === 'reject';
+  const roleLabel = useMemo(() => {
+    if (params.role === 'line') return 'Line Manager';
+    if (params.role === 'hr') return 'HR Manager';
+    return 'Người duyệt';
+  }, [params.role]);
 
-  async function submitDecision(extraData = {}) {
-    setLoading(true);
-    setResult(null);
-
-    try {
-      const response = await handleDecision({
-        ...payload,
-        ...extraData
-      });
-
-      setResult(response);
-    } catch (error) {
-      setResult({
-        success: false,
-        message: error.message
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
+  const decisionLabel = useMemo(() => {
+    if (params.decision === 'approve') return 'Duyệt đơn';
+    if (params.decision === 'reject') return 'Từ chối đơn';
+    return 'Xử lý đơn';
+  }, [params.decision]);
 
   useEffect(() => {
-    if (!isReject) {
-      submitDecision();
+    const isValid =
+      params.requestId &&
+      params.role &&
+      params.decision &&
+      params.token;
+
+    if (!isValid) {
+      setStatus('error');
+      setMessage('Thiếu thông tin xử lý đơn hoặc liên kết không hợp lệ.');
+      return;
     }
-  }, [isReject]);
 
-  if (isReject && !result) {
-    return (
-      <Card title="Nhập lý do từ chối đơn">
-        <Alert type="info">
-          Vui lòng nhập lý do từ chối để nhân sự nắm được thông tin và HR có căn cứ lưu trữ.
-        </Alert>
+    if (params.decision === 'reject') {
+      setStatus('ready-reject');
+      return;
+    }
 
-        <div className="reject-box">
-          <label className="field full-row">
-            <span>Lý do từ chối *</span>
-            <textarea
-              value={rejectReason}
-              onChange={(event) => setRejectReason(event.target.value)}
-              placeholder="Ví dụ: Chưa đảm bảo thời gian báo trước / Trùng lịch vận hành / Cần bổ sung bàn giao..."
-              required
-            />
-          </label>
+    if (params.decision === 'approve' && !hasAutoSubmitted.current) {
+      hasAutoSubmitted.current = true;
+      submitDecision('');
+    }
+  }, [params]);
 
-          <div className="actions">
-            <button
-              type="button"
-              className="btn danger"
-              disabled={loading || !rejectReason.trim()}
-              onClick={() => submitDecision({ rejectReason })}
-            >
-              {loading ? 'Đang xử lý...' : 'Xác nhận từ chối'}
-            </button>
-          </div>
-        </div>
-      </Card>
-    );
+  async function submitDecision(reasonText = '') {
+    try {
+      setSubmitting(true);
+      setStatus('processing');
+      setMessage('');
+
+      const response = await handleDecision({
+        requestId: params.requestId,
+        role: params.role,
+        decision: params.decision,
+        token: params.token,
+        rejectReason: reasonText
+      });
+
+      if (!response.success) {
+        throw new Error(response.message || 'Không thể xử lý đơn.');
+      }
+
+      setStatus('success');
+      setMessage(response.message || 'Xử lý đơn thành công.');
+    } catch (error) {
+      setStatus('error');
+      setMessage(error.message || 'Có lỗi xảy ra khi xử lý đơn.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  if (loading) {
-    return (
-      <Card title="Đang xử lý đơn">
-        <p className="muted">Hệ thống đang ghi nhận thao tác duyệt/từ chối...</p>
-      </Card>
-    );
+  async function handleRejectSubmit(event) {
+    event.preventDefault();
+
+    if (!rejectReason.trim()) {
+      setMessage('Vui lòng nhập lý do từ chối.');
+      return;
+    }
+
+    await submitDecision(rejectReason.trim());
   }
 
   return (
-    <Card title={result?.success ? 'Xử lý thành công' : 'Không thể xử lý'}>
-      <Alert type={result?.success ? 'success' : 'error'}>
-        {result?.message || 'Không có phản hồi từ hệ thống.'}
-      </Alert>
+    <div className="approval-page stack">
+      <section className="approval-hero">
+        <div className="approval-hero-copy">
+          <span className="eyebrow">XỬ LÝ ĐƠN PHÉP CHO NHÂN VIÊN</span>
+          <h1>Xử lý đơn nghỉ phép</h1>
+          <p>Ghi nhận thao tác duyệt hoặc từ chối đơn nghỉ phép.</p>
+        </div>
 
-      <p className="muted">
-        Bạn có thể đóng tab này hoặc quay lại email để tiếp tục công việc.
-      </p>
-    </Card>
+        <div className="approval-hero-logo">
+          <img src="/company-logo.png" alt="WESET" />
+        </div>
+      </section>
+
+      <section className="approval-info-grid">
+        <div className="approval-mini-card">
+          <span>Vai trò xử lý</span>
+          <strong>{roleLabel}</strong>
+        </div>
+
+        <div className="approval-mini-card">
+          <span>Thao tác</span>
+          <strong>{decisionLabel}</strong>
+        </div>
+
+        <div className="approval-mini-card">
+          <span>Mã đơn</span>
+          <strong>{params.requestId || '---'}</strong>
+        </div>
+      </section>
+
+      {status === 'loading' && (
+        <Card title="Đang tải dữ liệu">
+          <div className="approval-state">
+            <div className="approval-spinner" />
+            <h3>Đang kiểm tra liên kết xử lý</h3>
+            <p>Hệ thống đang xác thực thông tin đơn nghỉ phép...</p>
+          </div>
+        </Card>
+      )}
+
+      {status === 'processing' && (
+        <Card title="Đang xử lý đơn">
+          <div className="approval-state">
+            <div className="approval-spinner" />
+            <h3>Hệ thống đang ghi nhận thao tác của bạn</h3>
+            <p>Vui lòng chờ trong giây lát, không tắt trang lúc này.</p>
+          </div>
+        </Card>
+      )}
+
+      {status === 'ready-reject' && (
+        <Card title="Xác nhận từ chối đơn">
+          <form className="approval-reject-form" onSubmit={handleRejectSubmit}>
+            <Alert type="warning">
+              <strong>Lưu ý:</strong> Vui lòng nhập rõ lý do từ chối để nhân sự
+              nắm được thông tin và điều chỉnh khi cần.
+            </Alert>
+
+            {message && (
+              <Alert type="error">
+                <div>{message}</div>
+              </Alert>
+            )}
+
+            <div className="approval-reject-box">
+              <label htmlFor="rejectReason">Lý do từ chối *</label>
+              <textarea
+                id="rejectReason"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Nhập lý do từ chối đơn nghỉ phép"
+                rows={6}
+                required
+              />
+            </div>
+
+            <div className="approval-actions">
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => window.location.href = '/'}
+              >
+                Quay về trang chủ
+              </button>
+
+              <button
+                type="submit"
+                className="btn danger"
+                disabled={submitting}
+              >
+                {submitting ? 'Đang xử lý...' : 'Xác nhận từ chối'}
+              </button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      {status === 'success' && (
+        <Card title="Xử lý thành công">
+          <div className="approval-state approval-state-success">
+            <div className="approval-state-icon success">✓</div>
+            <h3>Thao tác đã được ghi nhận</h3>
+            <p>{message}</p>
+
+            <div className="approval-result-box">
+              <div>
+                <span>Mã đơn phép</span>
+                <strong>{params.requestId}</strong>
+              </div>
+
+              <div>
+                <span>Người xử lý</span>
+                <strong>{roleLabel}</strong>
+              </div>
+
+              <div>
+                <span>Trạng thái</span>
+                <strong>{decisionLabel}</strong>
+              </div>
+            </div>
+
+            <div className="approval-actions center">
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => window.location.href = '/'}
+              >
+                Về trang chủ
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {status === 'error' && (
+        <Card title="Không thể xử lý đơn">
+          <div className="approval-state approval-state-error">
+            <div className="approval-state-icon error">!</div>
+            <h3>Có lỗi xảy ra</h3>
+            <p>{message}</p>
+
+            <div className="approval-actions center">
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => window.location.href = '/'}
+              >
+                Quay về trang chủ
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
+    </div>
   );
 }
 
