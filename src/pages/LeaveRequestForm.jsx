@@ -1,12 +1,13 @@
-import { useMemo, useState, useEffect } from 'react';
-import { submitLeaveRequest } from '../api';
+
+import { useEffect, useMemo, useState } from 'react';
+
+import { getLineManagers, submitLeaveRequest } from '../api';
 import Card from '../components/Card';
 import Alert from '../components/Alert';
 import Field from '../components/Field';
-import { getLineManagers } from '../api';
+
 import {
   DEPARTMENTS,
-  POSITIONS_BY_DEPARTMENT,
   LEAVE_TYPES,
   INITIAL_LEAVE_FORM
 } from '../constants/options';
@@ -17,9 +18,10 @@ function LeaveRequestForm() {
   const [notice, setNotice] = useState(null);
   const [lastRequestId, setLastRequestId] = useState('');
   const [lineManagers, setLineManagers] = useState([]);
+  const [successModal, setSuccessModal] = useState(null);
+  const [copied, setCopied] = useState(false);
+
   const totalDaysNumber = Number(form.totalDays);
-    const [successModal, setSuccessModal] = useState(null);
-    const [copied, setCopied] = useState(false);
 
   const hasHalfDay = useMemo(() => {
     if (!form.totalDays) return false;
@@ -36,35 +38,31 @@ function LeaveRequestForm() {
       hasHalfDay
     });
   }, [form, hasHalfDay]);
-useEffect(() => {
-  async function loadLineManagers() {
-    try {
-      const response = await getLineManagers();
 
-      if (response.success) {
-        setLineManagers(response.data || []);
+  const lineManagerOptions = useMemo(() => {
+    if (!form.department) return [];
+
+    return lineManagers.filter((manager) => manager.department === form.department);
+  }, [lineManagers, form.department]);
+
+  useEffect(() => {
+    async function loadLineManagers() {
+      try {
+        const response = await getLineManagers();
+
+        if (response.success) {
+          setLineManagers(response.data || []);
+        }
+      } catch (error) {
+        console.error(error);
       }
-    } catch (error) {
-      console.error(error);
     }
-  }
 
-  loadLineManagers();
-}, []);
-const lineManagerOptions = useMemo(() => {
-  if (!form.department) return [];
-
-  return lineManagers.filter((manager) => manager.department === form.department);
-}, [lineManagers, form.department]);
-
-const positionOptions = useMemo(() => {
-  if (!form.department) return [];
-
-  return POSITIONS_BY_DEPARTMENT[form.department] || [];
-}, [form.department]);
+    loadLineManagers();
+  }, []);
 
   function handleChange(event) {
-  const { name, value, type, checked } = event.target;
+    const { name, value, type, checked } = event.target;
 
     if (name === 'totalDays') {
       const numberValue = Number(value);
@@ -81,19 +79,20 @@ const positionOptions = useMemo(() => {
 
       return;
     }
+
     if (name === 'department') {
-    setForm((prev) => ({
+      setForm((prev) => ({
         ...prev,
         department: value,
-        position: '',
         lineManagerEmail: ''
-    }));
+      }));
 
-    return;
+      return;
     }
+
     setForm((prev) => ({
-    ...prev,
-    [name]: type === 'checkbox' ? checked : value
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
     }));
   }
 
@@ -104,6 +103,7 @@ const positionOptions = useMemo(() => {
     setSuccessModal(null);
     setCopied(false);
   }
+
 
 async function copyRequestId() {
   if (!successModal?.requestId) return;
@@ -129,33 +129,43 @@ async function copyRequestId() {
       setCopied(false);
     }, 1600);
   } catch (error) {
-
-const newRequestId = response.requestId || '';
-
-setNotice(null);
-setLastRequestId(newRequestId);
-setSuccessModal({
-  requestId: newRequestId
-});
-setCopied(false);
-setForm(INITIAL_LEAVE_FORM);
-
-    
+    setNotice({
+      type: 'error',
+      message: 'Không thể copy mã đơn. Vui lòng copy thủ công.'
+    });
   }
 }
 
-function closeSuccessModal() {
-  setSuccessModal(null);
-  setCopied(false);
-}
+  function closeSuccessModal() {
+    setSuccessModal(null);
+    setCopied(false);
+  }
 
   function validateFormBeforeSubmit() {
+    if (!form.fullName.trim()) {
+      throw new Error('Vui lòng nhập họ và tên.');
+    }
+
+    if (!form.department) {
+      throw new Error('Vui lòng chọn bộ phận.');
+    }
+
+    if (!form.position.trim()) {
+      throw new Error('Vui lòng nhập vị trí.');
+    }
+
+    if (!form.employeeEmail.trim()) {
+      throw new Error('Vui lòng nhập email nhân sự.');
+    }
+
+    if (!form.lineManagerEmail) {
+      throw new Error('Vui lòng chọn quản lý trực tiếp.');
+    }
+
     if (!form.startDate) {
       throw new Error('Vui lòng chọn ngày bắt đầu nghỉ.');
     }
-    if (!form.lineManagerEmail) {
-  throw new Error('Vui lòng chọn quản lý trực tiếp.');
-}
+
     if (!form.returnDate) {
       throw new Error('Vui lòng chọn ngày quay lại làm việc.');
     }
@@ -189,8 +199,25 @@ function closeSuccessModal() {
     if (!leaveTimeText) {
       throw new Error('Vui lòng kiểm tra lại thời gian nghỉ.');
     }
+
+    if (!form.reason.trim()) {
+      throw new Error('Vui lòng nhập lý do nghỉ.');
+    }
+
+    if (!form.handoverName.trim()) {
+      throw new Error('Vui lòng nhập họ tên người nhận bàn giao.');
+    }
+
+    if (!form.handoverEmail.trim()) {
+      throw new Error('Vui lòng nhập email người nhận bàn giao.');
+    }
+
+    if (!form.handoverDetails.trim()) {
+      throw new Error('Vui lòng nhập công việc bàn giao cụ thể.');
+    }
+
     if (!form.policyAccepted) {
-    throw new Error('Vui lòng xác nhận đã đọc và hiểu quy định của Công ty trước khi gửi đơn.');
+      throw new Error('Vui lòng xác nhận đã đọc và hiểu quy định của Công ty trước khi gửi đơn.');
     }
   }
 
@@ -206,6 +233,7 @@ function closeSuccessModal() {
 
       const payload = {
         ...form,
+        position: form.position.trim(),
         startDate: formatDateVN(form.startDate),
         returnDate: formatDateVN(form.returnDate),
         leaveSession: leaveTimeText
@@ -217,12 +245,14 @@ function closeSuccessModal() {
         throw new Error(response.message || 'Gửi đơn thất bại.');
       }
 
-      setNotice({
-        type: 'success',
-        message: 'Gửi đơn thành công. Vui lòng lưu mã đơn để tra cứu trạng thái.'
-      });
+      const newRequestId = response.requestId || '';
 
-      setLastRequestId(response.requestId);
+      setNotice(null);
+      setLastRequestId(newRequestId);
+      setSuccessModal({
+        requestId: newRequestId
+      });
+      setCopied(false);
       setForm(INITIAL_LEAVE_FORM);
     } catch (error) {
       setNotice({
@@ -236,11 +266,11 @@ function closeSuccessModal() {
 
   return (
     <form className="stack" onSubmit={handleSubmit}>
-     {notice && (
-  <Alert type={notice.type}>
-    <div>{notice.message}</div>
-  </Alert>
-)}
+      {notice && (
+        <Alert type={notice.type}>
+          <div>{notice.message}</div>
+        </Alert>
+      )}
 
       <Card title="1. Thông tin nhân sự">
         <div className="form-grid">
@@ -270,51 +300,43 @@ function closeSuccessModal() {
             </select>
           </Field>
 
-         <Field label="Vị trí *">
-            <select
-                name="position"
-                value={form.position}
-                onChange={handleChange}
-                disabled={!form.department}
-                required
-            >
-                <option value="">
-                {!form.department ? 'Chọn bộ phận trước' : 'Chọn vị trí'}
-                </option>
+          <Field label="Vị trí *">
+            <input
+              name="position"
+              value={form.position}
+              onChange={handleChange}
+              placeholder="Nhập vị trí hiện tại"
+              required
+            />
+          </Field>
 
-                {positionOptions.map((position) => (
-                <option key={position} value={position}>
-                    {position}
-                </option>
-                ))}
-            </select>
-            </Field>
-            <Field label="Quản lý trực tiếp *">
+          <Field label="Quản lý trực tiếp *">
             <select
-                name="lineManagerEmail"
-                value={form.lineManagerEmail}
-                onChange={handleChange}
-                disabled={!form.department}
-                required
+              name="lineManagerEmail"
+              value={form.lineManagerEmail}
+              onChange={handleChange}
+              disabled={!form.department}
+              required
             >
-                <option value="">
+              <option value="">
                 {!form.department ? 'Chọn bộ phận trước' : 'Chọn Line Manager'}
-                </option>
+              </option>
 
-                {lineManagerOptions.map((manager) => (
+              {lineManagerOptions.map((manager) => (
                 <option key={manager.email + manager.position} value={manager.email}>
-                    {manager.label}
+                  {manager.label}
                 </option>
-                ))}
+              ))}
             </select>
-            </Field>
+          </Field>
+
           <Field label="Email nhân sự *">
             <input
               type="email"
               name="employeeEmail"
               value={form.employeeEmail}
               onChange={handleChange}
-              placeholder="email@company.com"
+              placeholder="email@gmail.com"
               required
             />
           </Field>
@@ -419,9 +441,8 @@ function closeSuccessModal() {
       </Card>
 
       <Card title="3. Thông tin bàn giao công việc">
-        
         <Alert type="info">
-        <strong>Lưu ý:</strong> Nhân sự xác nhận đã trao đổi nội dung công việc với Người nhận bàn giao.
+          <strong>Lưu ý:</strong> Nhân sự xác nhận đã trao đổi nội dung công việc với Người nhận bàn giao.
         </Alert>
 
         <div className="form-grid">
@@ -441,7 +462,7 @@ function closeSuccessModal() {
               name="handoverEmail"
               value={form.handoverEmail}
               onChange={handleChange}
-              placeholder="email@company.com"
+              placeholder="email@gmail.com"
               required
             />
           </Field>
@@ -465,24 +486,26 @@ function closeSuccessModal() {
             />
           </Field>
         </div>
+
         <div className="policy-confirm-box">
-        <label className="policy-check">
+          <label className="policy-check">
             <input
-            type="checkbox"
-            name="policyAccepted"
-            checked={form.policyAccepted}
-            onChange={handleChange}
-            required
+              type="checkbox"
+              name="policyAccepted"
+              checked={form.policyAccepted}
+              onChange={handleChange}
+              required
             />
 
             <span>
-            Trước khi nộp Đơn xin nghỉ phép, nhân viên xác nhận đã đọc và hiểu những
-            quy định của Công ty. Bất kỳ thông tin nào do nhân viên cung cấp không
-            đúng sự thật sẽ được xem là vi phạm Quy định Công ty và bị xem xét xử lý
-            vi phạm kỷ luật.
+              Trước khi nộp Đơn xin nghỉ phép, nhân viên xác nhận đã đọc và hiểu những
+              quy định của Công ty. Bất kỳ thông tin nào do nhân viên cung cấp không
+              đúng sự thật sẽ được xem là vi phạm Quy định Công ty và bị xem xét xử lý
+              vi phạm kỷ luật.
             </span>
-        </label>
+          </label>
         </div>
+
         <div className="actions">
           <button type="button" className="btn ghost" onClick={resetForm}>
             Hủy
@@ -493,43 +516,44 @@ function closeSuccessModal() {
           </button>
         </div>
       </Card>
+
       {successModal && (
-  <div className="success-modal-backdrop">
-    <div className="success-modal">
-      <div className="success-icon">✓</div>
+        <div className="success-modal-backdrop">
+          <div className="success-modal">
+            <div className="success-icon">✓</div>
 
-      <h3>Gửi đơn thành công</h3>
+            <h3>Gửi đơn thành công</h3>
 
-      <p>
-        Đơn nghỉ phép của bạn đã được ghi nhận. Vui lòng lưu mã đơn để tra cứu
-        trạng thái xử lý khi cần.
-      </p>
+            <p>
+              Đơn nghỉ phép của bạn đã được ghi nhận. Vui lòng lưu mã đơn để tra cứu
+              trạng thái xử lý khi cần.
+            </p>
 
-      <div className="success-request-box">
-        <span>Mã đơn phép</span>
-        <strong>{successModal.requestId}</strong>
-      </div>
+            <div className="success-request-box">
+              <span>Mã đơn phép</span>
+              <strong>{successModal.requestId}</strong>
+            </div>
 
-      <div className="success-modal-actions">
-        <button
-          type="button"
-          className="btn primary"
-          onClick={copyRequestId}
-        >
-          {copied ? 'Đã copy mã đơn' : 'Copy mã đơn'}
-        </button>
+            <div className="success-modal-actions">
+              <button
+                type="button"
+                className="btn primary"
+                onClick={copyRequestId}
+              >
+                {copied ? 'Đã copy mã đơn' : 'Copy mã đơn'}
+              </button>
 
-        <button
-          type="button"
-          className="btn ghost"
-          onClick={closeSuccessModal}
-        >
-          Đóng
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={closeSuccessModal}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

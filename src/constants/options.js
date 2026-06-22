@@ -1,3 +1,4 @@
+
 export const DEPARTMENTS = [
   'GA',
   'EC',
@@ -5,38 +6,6 @@ export const DEPARTMENTS = [
   'PRC',
   'TSE'
 ];
-
-export const POSITIONS_BY_DEPARTMENT = {
-  GA: [
-    'Nhân viên nhân sự',
-    'Nhân viên truyền thông nội bộ',
-    'Nhân viên kế toán',
-    'Nhân viên Admin'
-  ],
-
-  EC: [
-    'Nhân viên tư vấn khóa học',
-    'Teller',
-    'EC Leader',
-    'Senior EC'
-  ],
-
-  ACA: [
-    'Giáo viên',
-    'Trợ giảng',
-    'Nhân viên học vụ'
-  ],
-
-  PRC: [
-    'Media Executive',
-    'Content Leader'
-  ],
-
-  TSE: [
-    'Nhân viên IT',
-    'CS Supervisor'
-  ]
-};
 
 export const INITIAL_LEAVE_FORM = {
   fullName: '',
