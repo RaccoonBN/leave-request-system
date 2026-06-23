@@ -1,8 +1,10 @@
 import { useState } from 'react';
+
 import LeaveRequestForm from './pages/LeaveRequestForm';
 import LookupPage from './pages/LookupPage';
 import HRDashboard from './pages/HRDashboard';
 import DecisionPage from './pages/DecisionPage';
+import LeaveGuidePage from './pages/LeaveGuidePage';
 
 function App() {
   const params = new URLSearchParams(window.location.search);
@@ -17,6 +19,7 @@ function App() {
   if (isDecisionPage) {
     return (
       <main className="app-shell">
+        <Hero type="decision" />
         <DecisionPage />
       </main>
     );
@@ -36,6 +39,7 @@ function App() {
 
       <nav className="tabs">
         <button
+          type="button"
           className={page === 'submit' ? 'tab active' : 'tab'}
           onClick={() => setPage('submit')}
         >
@@ -43,15 +47,25 @@ function App() {
         </button>
 
         <button
+          type="button"
           className={page === 'lookup' ? 'tab active' : 'tab'}
           onClick={() => setPage('lookup')}
         >
           Tra cứu trạng thái
         </button>
+
+        <button
+          type="button"
+          className={page === 'guide' ? 'tab active' : 'tab'}
+          onClick={() => setPage('guide')}
+        >
+          Quy trình & lưu ý
+        </button>
       </nav>
 
       {page === 'submit' && <LeaveRequestForm />}
       {page === 'lookup' && <LookupPage />}
+      {page === 'guide' && <LeaveGuidePage />}
     </main>
   );
 }
