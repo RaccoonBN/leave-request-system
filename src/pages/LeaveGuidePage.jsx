@@ -114,19 +114,51 @@ function LeaveGuidePage() {
           </div>
         </div>
 
-        <div className="guide-highlight-box">
-          <div className="guide-highlight-icon">
-            <FiAlertTriangle />
-          </div>
+    <div className="guide-warning-panel">
+  <div className="guide-warning-header">
+    <div className="guide-warning-icon">
+      <FiAlertTriangle />
+    </div>
 
-          <div>
-            <strong>Lưu ý quan trọng</strong>
-            <p>
-              Nếu <strong>Line Manager từ chối</strong>, đơn sẽ <strong>không chuyển tiếp đến HR Manager</strong>.
-              Hệ thống sẽ gửi thông báo kết quả trực tiếp về email của nhân sự.
-            </p>
-          </div>
-        </div>
+    <div>
+      <span>Lưu ý quan trọng</span>
+      <h3>Những điểm cần nắm trước khi gửi đơn</h3>
+    </div>
+  </div>
+
+  <div className="guide-warning-grid">
+    <div className="guide-warning-card guide-warning-card-danger">
+      <span className="guide-warning-label">Trường hợp từ chối</span>
+
+      <p>
+        Nếu <strong>Line Manager từ chối</strong>, đơn sẽ{' '}
+        <strong>không chuyển tiếp đến HR Manager</strong>. Hệ thống sẽ gửi thông báo
+        kết quả trực tiếp về email của nhân sự.
+      </p>
+    </div>
+
+    <div className="guide-warning-card guide-warning-card-ec">
+      <span className="guide-warning-label">Riêng bộ phận EC</span>
+
+      <p>
+        Đơn nghỉ phép của nhân sự EC cần được{' '}
+        <strong>Team Lead / EC Leader duyệt trước</strong>, sau đó chuyển tiếp đến{' '}
+        <strong>Line Manager / EC Manager</strong> và cuối cùng là{' '}
+        <strong>HR Manager</strong>.
+      </p>
+
+      <div className="guide-ec-timeline">
+        <div className="guide-ec-step">Nhân sự nộp đơn</div>
+        <FiArrowRight />
+        <div className="guide-ec-step">EC Leader duyệt</div>
+        <FiArrowRight />
+        <div className="guide-ec-step">EC Manager duyệt</div>
+        <FiArrowRight />
+        <div className="guide-ec-step">HR Manager duyệt</div>
+      </div>
+    </div>
+  </div>
+</div>
       </Card>
 
       <Card title="Lưu ý về thời gian báo trước">

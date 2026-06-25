@@ -38,12 +38,38 @@ function LeaveRequestForm() {
       hasHalfDay
     });
   }, [form, hasHalfDay]);
+const isECDepartment = form.department === 'EC';
 
-  const lineManagerOptions = useMemo(() => {
-    if (!form.department) return [];
+const teamLeadOptions = useMemo(() => {
+  if (!isECDepartment) return [];
 
-    return lineManagers.filter((manager) => manager.department === form.department);
-  }, [lineManagers, form.department]);
+  return lineManagers.filter(
+    (manager) =>
+      manager.department === 'EC' &&
+      manager.role === 'EC_LEADER'
+  );
+}, [lineManagers, isECDepartment]);
+
+const lineManagerOptions = useMemo(() => {
+  if (!form.department) return [];
+
+  if (form.department === 'EC') {
+    return lineManagers.filter(
+      (manager) =>
+        manager.department === 'EC' &&
+        manager.role === 'LINE_MANAGER'
+    );
+  }
+
+  return lineManagers.filter(
+    (manager) =>
+      manager.department === form.department &&
+      (
+        manager.role === 'LINE_MANAGER' ||
+        (form.department === 'GA' && manager.role === 'HR_MANAGER')
+      )
+  );
+}, [lineManagers, form.department]);
 
   useEffect(() => {
     async function loadLineManagers() {
@@ -80,15 +106,16 @@ function LeaveRequestForm() {
       return;
     }
 
-    if (name === 'department') {
-      setForm((prev) => ({
-        ...prev,
-        department: value,
-        lineManagerEmail: ''
-      }));
+   if (name === 'department') {
+  setForm((prev) => ({
+    ...prev,
+    department: value,
+    lineManagerEmail: '',
+    teamLeadEmail: ''
+  }));
 
-      return;
-    }
+  return;
+}
 
     setForm((prev) => ({
       ...prev,
@@ -153,6 +180,9 @@ async function copyRequestId() {
     if (!form.position.trim()) {
       throw new Error('Vui lòng nhập vị trí.');
     }
+    if (!form.employeeCode.trim()) {
+  throw new Error('Vui lòng nhập mã nhân viên.');
+    }
 
     if (!form.employeeEmail.trim()) {
       throw new Error('Vui lòng nhập email nhân sự.');
@@ -161,7 +191,9 @@ async function copyRequestId() {
     if (!form.lineManagerEmail) {
       throw new Error('Vui lòng chọn quản lý trực tiếp.');
     }
-
+    if (form.department === 'EC' && !form.teamLeadEmail) {
+  throw new Error('Vui lòng chọn Team Lead/EC Leader.');
+}
     if (!form.startDate) {
       throw new Error('Vui lòng chọn ngày bắt đầu nghỉ.');
     }
@@ -232,12 +264,13 @@ async function copyRequestId() {
       validateFormBeforeSubmit();
 
       const payload = {
-        ...form,
-        position: form.position.trim(),
-        startDate: formatDateVN(form.startDate),
-        returnDate: formatDateVN(form.returnDate),
-        leaveSession: leaveTimeText
-      };
+  ...form,
+  employeeCode: form.employeeCode.trim(),
+  position: form.position.trim(),
+  startDate: formatDateVN(form.startDate),
+  returnDate: formatDateVN(form.returnDate),
+  leaveSession: leaveTimeText
+};
 
       const response = await submitLeaveRequest(payload);
 
@@ -283,7 +316,15 @@ async function copyRequestId() {
               required
             />
           </Field>
-
+          <Field label="Mã nhân viên *">
+          <input
+            name="employeeCode"
+            value={form.employeeCode}
+            onChange={handleChange}
+            placeholder="Nhập mã nhân viên"
+            required
+          />
+        </Field>
           <Field label="Bộ phận *">
             <select
               name="department"
@@ -309,7 +350,24 @@ async function copyRequestId() {
               required
             />
           </Field>
+              {isECDepartment && (
+          <Field label="Team Lead / EC Leader *">
+            <select
+              name="teamLeadEmail"
+              value={form.teamLeadEmail}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Chọn Team Lead / EC Leader</option>
 
+              {teamLeadOptions.map((leader) => (
+                <option key={leader.email + leader.position} value={leader.email}>
+                  {leader.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
           <Field label="Quản lý trực tiếp *">
             <select
               name="lineManagerEmail"
@@ -323,10 +381,10 @@ async function copyRequestId() {
               </option>
 
               {lineManagerOptions.map((manager) => (
-                <option key={manager.email + manager.position} value={manager.email}>
-                  {manager.label}
-                </option>
-              ))}
+              <option key={manager.email + manager.position} value={manager.email}>
+                {manager.label}
+              </option>
+            ))}
             </select>
           </Field>
 
@@ -487,24 +545,31 @@ async function copyRequestId() {
           </Field>
         </div>
 
-        <div className="policy-confirm-box">
-          <label className="policy-check">
-            <input
-              type="checkbox"
-              name="policyAccepted"
-              checked={form.policyAccepted}
-              onChange={handleChange}
-              required
-            />
+      <div className="policy-confirm-box">
+      <label className="policy-check">
+        <input
+          type="checkbox"
+          name="policyAccepted"
+          checked={form.policyAccepted}
+          onChange={handleChange}
+          required
+        />
 
-            <span>
-              Trước khi nộp Đơn xin nghỉ phép, nhân viên xác nhận đã đọc và hiểu những
-              quy định của Công ty. Bất kỳ thông tin nào do nhân viên cung cấp không
-              đúng sự thật sẽ được xem là vi phạm Quy định Công ty và bị xem xét xử lý
-              vi phạm kỷ luật.
-            </span>
-          </label>
-        </div>
+        <span>
+          Trước khi nộp Đơn xin nghỉ phép, nhân viên xác nhận đã đọc và hiểu những{' '}
+          <a
+            href="https://drive.google.com/file/d/1yXxqxxUoilTAFQpvKXmyvQIPdyaHslmp/view?usp=sharing"
+            target="_blank"
+            rel="noreferrer"
+            className="policy-link"
+          >
+            quy định của Công ty
+          </a>
+          . Bất kỳ thông tin nào do nhân viên cung cấp không đúng sự thật sẽ được xem là
+          vi phạm Quy định Công ty và bị xem xét xử lý vi phạm kỷ luật.
+        </span>
+      </label>
+    </div>
 
         <div className="actions">
           <button type="button" className="btn ghost" onClick={resetForm}>

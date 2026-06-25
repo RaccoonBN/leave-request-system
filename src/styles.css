@@ -1268,12 +1268,16 @@ td strong {
   max-height: 88vh;
   overflow-y: auto;
   padding: 28px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   border-radius: 28px;
   background: #ffffff;
   border: 1px solid rgba(186, 230, 253, 0.9);
   box-shadow: 0 30px 80px rgba(15, 23, 42, 0.22);
 }
-
+.detail-modal::-webkit-scrollbar {
+  display: none;
+}
 .detail-modal-header {
   display: flex;
   align-items: flex-start;
@@ -3204,5 +3208,519 @@ td strong {
   .guide-contact-box {
     padding: 16px;
     border-radius: 18px;
+  }
+}
+.policy-link {
+  color: #0c63a6;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.policy-link:hover {
+  color: #084c80;
+}
+/* =========================
+   Guide Warning Panel - Clean Responsive
+========================= */
+
+.guide-warning-panel {
+  margin-top: 26px;
+  padding: 26px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(250, 204, 21, 0.18), transparent 38%),
+    linear-gradient(135deg, rgba(255, 251, 235, 0.96), rgba(255, 255, 255, 0.96));
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.06);
+}
+
+.guide-warning-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.guide-warning-icon {
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #b45309;
+  background: #ffffff;
+  border: 1px solid rgba(245, 158, 11, 0.18);
+  box-shadow: 0 12px 24px rgba(180, 83, 9, 0.1);
+}
+
+.guide-warning-icon svg {
+  width: 25px;
+  height: 25px;
+  stroke-width: 2.4;
+}
+
+.guide-warning-header span {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.14);
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.guide-warning-header h3 {
+  margin: 0;
+  color: #0f2f4f;
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.guide-warning-grid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.25fr;
+  gap: 16px;
+}
+
+.guide-warning-card {
+  position: relative;
+  padding: 20px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.04);
+}
+
+.guide-warning-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18px;
+  bottom: 18px;
+  width: 4px;
+  border-radius: 999px;
+}
+
+.guide-warning-card-danger::before {
+  background: linear-gradient(180deg, #f59e0b, #dc2626);
+}
+
+.guide-warning-card-ec {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(239, 246, 255, 0.72));
+  border-color: rgba(147, 197, 253, 0.62);
+}
+
+.guide-warning-card-ec::before {
+  background: linear-gradient(180deg, #0ea5e9, #0f5f96);
+}
+
+.guide-warning-label {
+  display: inline-flex;
+  margin-bottom: 12px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #0f5f96;
+  background: rgba(14, 165, 233, 0.1);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.guide-warning-card-danger .guide-warning-label {
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.14);
+}
+
+/* Giảm độ đậm chữ trong box lưu ý */
+.guide-warning-card p strong {
+  color: #12385a;
+  font-weight: 650;
+}
+
+.guide-warning-card-danger p strong {
+  color: #12385a;
+  font-weight: 650;
+}
+.guide-ec-timeline {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(14, 165, 233, 0.3);
+}
+
+.guide-ec-step {
+  display: grid;
+  place-items: center;
+  min-height: 42px;
+  padding: 9px 12px;
+  border-radius: 999px;
+  text-align: center;
+  color: #0f3b66;
+  background: #ffffff;
+  border: 1px solid rgba(147, 197, 253, 0.9);
+  font-size: 13px;
+  font-weight: 650;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.guide-ec-timeline svg {
+  width: 18px;
+  height: 18px;
+  color: #d97706;
+  stroke-width: 2.7;
+}
+
+/* Tablet */
+@media (max-width: 1100px) {
+  .guide-warning-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-ec-timeline {
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  .guide-ec-timeline svg:nth-of-type(2) {
+    display: none;
+  }
+
+  .guide-ec-timeline .guide-ec-step:nth-of-type(3),
+  .guide-ec-timeline .guide-ec-step:nth-of-type(4) {
+    margin-top: 8px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .guide-warning-panel {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .guide-warning-header {
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .guide-warning-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 15px;
+  }
+
+  .guide-warning-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .guide-warning-header h3 {
+    font-size: 19px;
+  }
+
+  .guide-warning-card {
+    padding: 17px;
+    border-radius: 18px;
+  }
+
+  .guide-warning-card p {
+    font-size: 14px;
+  }
+
+  .guide-ec-timeline {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .guide-ec-timeline svg {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+
+  .guide-ec-step {
+    width: 100%;
+    min-height: 40px;
+    font-size: 13px;
+  }
+}
+/* =========================
+   HR Dashboard Table Upgrade
+========================= */
+
+.hr-table-wrap {
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(191, 219, 254, 0.75);
+  background: #ffffff;
+}
+
+.hr-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.hr-table thead th {
+  padding: 18px 22px;
+  background: #f8fbff;
+  color: #526176;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #dbeafe;
+}
+
+.hr-table tbody td {
+  padding: 18px 22px;
+  color: #334155;
+  font-size: 15px;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: middle;
+}
+
+.hr-table tbody tr {
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.hr-table tbody tr:hover {
+  background: rgba(248, 250, 252, 0.85);
+}
+
+.hr-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.hr-table td strong {
+  display: block;
+  color: #172033;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.hr-request-id {
+  color: #0f3b66 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em;
+}
+
+.hr-table .muted {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Icon xem chi tiết */
+.hr-icon-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 15px;
+  border: 1px solid rgba(186, 230, 253, 0.95);
+  background: linear-gradient(135deg, #eff9ff, #dff3ff);
+  color: #0f5f96;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.hr-icon-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.4;
+}
+
+.hr-icon-btn:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  box-shadow: 0 10px 20px rgba(14, 165, 233, 0.18);
+}
+
+.hr-icon-btn:active {
+  transform: translateY(0);
+}
+
+/* Table note */
+.table-note {
+  margin: 18px 0 14px;
+  color: #64748b;
+  font-size: 15px;
+}
+
+.table-note strong {
+  color: #0f3b66;
+  font-weight: 700;
+}
+
+.table-note-total {
+  color: #94a3b8;
+}
+
+/* Pagination */
+.hr-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.hr-page-btn {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid rgba(191, 219, 254, 0.9);
+  background: #ffffff;
+  color: #0f5f96;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
+}
+
+.hr-page-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.5;
+}
+
+.hr-page-btn:hover:not(:disabled) {
+  background: #eff9ff;
+  transform: translateY(-1px);
+}
+
+.hr-page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.hr-page-info {
+  min-width: 96px;
+  height: 42px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 14px;
+  background: #f8fbff;
+  border: 1px solid rgba(191, 219, 254, 0.75);
+  color: #64748b;
+  font-size: 14px;
+}
+
+.hr-page-info strong {
+  color: #0f3b66;
+  font-weight: 700;
+}
+
+/* Ẩn scrollbar modal nhưng vẫn cuộn được */
+.detail-modal,
+.detail-modal-backdrop {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.detail-modal::-webkit-scrollbar,
+.detail-modal-backdrop::-webkit-scrollbar {
+  display: none;
+}
+
+/* Responsive table */
+@media (max-width: 900px) {
+  .hr-table-wrap {
+    border: 0;
+    background: transparent;
+  }
+
+  .hr-table,
+  .hr-table thead,
+  .hr-table tbody,
+  .hr-table tr,
+  .hr-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .hr-table thead {
+    display: none;
+  }
+
+  .hr-table tbody tr {
+    margin-bottom: 14px;
+    padding: 16px;
+    border-radius: 22px;
+    background: #ffffff;
+    border: 1px solid rgba(191, 219, 254, 0.75);
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.05);
+  }
+
+  .hr-table tbody td {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid #eef2f7;
+  }
+
+  .hr-table tbody td:last-child {
+    border-bottom: 0;
+  }
+
+  .hr-table tbody td::before {
+    content: attr(data-label);
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .hr-icon-btn {
+    justify-self: start;
+  }
+
+  .hr-pagination {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .hr-table tbody tr {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .hr-table tbody td {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .table-note-total {
+    display: block;
+    margin-top: 4px;
+  }
+
+  .hr-pagination {
+    gap: 8px;
+  }
+
+  .hr-page-info {
+    min-width: 86px;
+    font-size: 13px;
   }
 }

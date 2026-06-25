@@ -12,6 +12,8 @@ export const INITIAL_LEAVE_FORM = {
   department: '',
   position: '',
   employeeEmail: '',
+  employeeCode: '',
+  teamLeadEmail: '',
   lineManagerEmail: '',
   leaveType: 'Nghỉ phép năm',
   startDate: '',

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
+import { FiEye, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 import { getLeaveRequestsForHR } from '../api';
 import { DEPARTMENTS, FINAL_STATUSES } from '../constants/options';
@@ -8,6 +9,8 @@ import Card from '../components/Card';
 import Alert from '../components/Alert';
 import Field from '../components/Field';
 import StatusBadge from '../components/StatusBadge';
+
+const PAGE_SIZE = 5;
 
 function HRDashboard() {
   const [password, setPassword] = useState('');
@@ -22,6 +25,7 @@ function HRDashboard() {
   const [statusFilter, setStatusFilter] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   async function fetchRequests(inputPassword = password, shouldLogin = false) {
     setLoading(true);
@@ -63,6 +67,7 @@ function HRDashboard() {
     setStatusFilter('');
     setFromDate('');
     setToDate('');
+    setCurrentPage(1);
     setNotice(null);
     setSelectedRequest(null);
   }
@@ -73,6 +78,7 @@ function HRDashboard() {
     setStatusFilter('');
     setFromDate('');
     setToDate('');
+    setCurrentPage(1);
   }
 
   useEffect(() => {
@@ -87,15 +93,22 @@ function HRDashboard() {
 
   const filteredRequests = useMemo(() => {
     return requests.filter((item) => {
-      const searchableText = [
-        item.requestId,
-        item.fullName,
-        item.employeeEmail,
-        item.department,
-        item.position,
-        item.leaveType,
-        item.finalStatus
-      ]
+     const searchableText = [
+      item.requestId,
+      item.fullName,
+      item.employeeCode,
+      item.employeeEmail,
+      item.department,
+      item.position,
+      item.leaveType,
+      item.ecLeaderEmail,
+      item.lineManagerEmail,
+      item.hrManagerEmail,
+      item.ecLeaderStatus,
+      item.lineStatus,
+      item.hrStatus,
+      item.finalStatus
+    ]
         .join(' ')
         .toLowerCase();
 
@@ -114,15 +127,45 @@ function HRDashboard() {
     });
   }, [requests, search, departmentFilter, statusFilter, fromDate, toDate]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, departmentFilter, statusFilter, fromDate, toDate, requests.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / PAGE_SIZE));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedRequests = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    return filteredRequests.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filteredRequests, currentPage]);
+
+  const pageStart = filteredRequests.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(currentPage * PAGE_SIZE, filteredRequests.length);
+
   const summary = useMemo(() => {
     const approved = filteredRequests.filter((item) => item.finalStatus === 'Đã duyệt').length;
 
-    const pending = filteredRequests.filter((item) =>
-      ['Chờ Line Manager duyệt', 'Chờ HR Manager duyệt'].includes(item.finalStatus)
+   const pending = filteredRequests.filter((item) =>
+      [
+        'Chờ EC Leader duyệt',
+        'Chờ EC Manager duyệt',
+        'Chờ Line Manager duyệt',
+        'Chờ HR Manager duyệt'
+      ].includes(item.finalStatus)
     ).length;
 
     const rejected = filteredRequests.filter((item) =>
-      ['Line Manager từ chối', 'HR Manager từ chối'].includes(item.finalStatus)
+      [
+        'EC Leader từ chối',
+        'EC Manager từ chối',
+        'Line Manager từ chối',
+        'HR Manager từ chối'
+      ].includes(item.finalStatus)
     ).length;
 
     return {
@@ -143,33 +186,42 @@ function HRDashboard() {
     }
 
     const exportData = filteredRequests.map((item) => ({
-      'Mã đơn': item.requestId,
-      'Thời gian tạo đơn': item.createdAt,
-      'Họ và tên': item.fullName,
-      'Bộ phận': item.department,
-      'Vị trí': item.position,
-      'Email nhân sự': item.employeeEmail,
-      'Loại nghỉ phép': item.leaveType,
-      'Ngày bắt đầu nghỉ': item.startDate,
-      'Ngày quay lại làm việc': item.returnDate,
-      'Số ngày nghỉ': item.totalDays,
-      'Thời gian nghỉ': item.leaveSession,
-      'Lý do nghỉ': item.reason,
-      'Người nhận bàn giao': item.handoverName,
-      'Email người nhận bàn giao': item.handoverEmail,
-      'SĐT người nhận bàn giao': item.handoverPhone,
-      'Công việc bàn giao': item.handoverDetails,
-      'Email quản lý trực tiếp': item.lineManagerEmail,
-      'Trạng thái Line Manager': item.lineStatus,
-      'Thời gian Line Manager xử lý': item.lineDecisionAt,
-      'Lý do từ chối Line': item.lineRejectReason || '',
-      'Email HR Manager': item.hrManagerEmail,
-      'Trạng thái HR Manager': item.hrStatus,
-      'Thời gian HR Manager xử lý': item.hrDecisionAt,
-      'Lý do từ chối HR': item.hrRejectReason || '',
-      'Trạng thái cuối': item.finalStatus,
-      'Thời gian cập nhật': item.updatedAt
-    }));
+    'Mã đơn': item.requestId,
+    'Thời gian tạo đơn': item.createdAt,
+    'Họ và tên': item.fullName,
+    'Mã nhân viên': item.employeeCode,
+    'Bộ phận': item.department,
+    'Vị trí': item.position,
+    'Email nhân sự': item.employeeEmail,
+    'Loại nghỉ phép': item.leaveType,
+    'Ngày bắt đầu nghỉ': item.startDate,
+    'Ngày quay lại làm việc': item.returnDate,
+    'Số ngày nghỉ': item.totalDays,
+    'Thời gian nghỉ': item.leaveSession,
+    'Lý do nghỉ': item.reason,
+    'Người nhận bàn giao': item.handoverName,
+    'Email người nhận bàn giao': item.handoverEmail,
+    'SĐT người nhận bàn giao': item.handoverPhone,
+    'Công việc bàn giao': item.handoverDetails,
+
+    'Email Team Lead/EC Leader': item.ecLeaderEmail,
+    'Trạng thái EC Leader': item.ecLeaderStatus,
+    'Thời gian EC Leader xử lý': item.ecLeaderDecisionAt,
+    'Lý do từ chối EC Leader': item.ecLeaderRejectReason || '',
+
+    'Email quản lý trực tiếp': item.lineManagerEmail,
+    'Trạng thái Line Manager': item.lineStatus,
+    'Thời gian Line Manager xử lý': item.lineDecisionAt,
+    'Lý do từ chối Line': item.lineRejectReason || '',
+
+    'Email HR Manager': item.hrManagerEmail,
+    'Trạng thái HR Manager': item.hrStatus,
+    'Thời gian HR Manager xử lý': item.hrDecisionAt,
+    'Lý do từ chối HR': item.hrRejectReason || '',
+
+    'Trạng thái cuối': item.finalStatus,
+    'Thời gian cập nhật': item.updatedAt
+  }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
@@ -256,269 +308,323 @@ function HRDashboard() {
   }
 
   return (
-    <section className="hr-dashboard-page">
-      {notice && <Alert type={notice.type}>{notice.message}</Alert>}
+  <section className="hr-dashboard-page">
+    {notice && <Alert type={notice.type}>{notice.message}</Alert>}
 
-      <div className="hr-dashboard-header">
-        <div className="hr-dashboard-title-wrap">
-          <div className="hr-dashboard-logo">
-            <img src="/company-logo.png" alt="Company logo" />
-          </div>
-
-          <div>
-            <p className="dashboard-kicker">Phát triển bởi HR Team</p>
-            <h1>HR Dashboard</h1>
-            <p>
-              Quản lý đơn nghỉ phép tập trung, theo dõi trạng thái xử lý và xuất dữ liệu nhanh chóng.
-            </p>
-          </div>
+    <div className="hr-dashboard-header">
+      <div className="hr-dashboard-title-wrap">
+        <div className="hr-dashboard-logo">
+          <img src="/company-logo.png" alt="Company logo" />
         </div>
 
-        <button className="btn danger hr-logout-btn" type="button" onClick={handleLogout}>
-          Đăng xuất
-        </button>
+        <div>
+          <p className="dashboard-kicker">Phát triển bởi HR Team</p>
+          <h1>HR Dashboard</h1>
+          <p>
+            Quản lý đơn nghỉ phép tập trung, theo dõi trạng thái xử lý và xuất dữ liệu nhanh chóng.
+          </p>
+        </div>
       </div>
 
-      <div className="hr-summary-grid">
-        <SummaryItem label="Tổng đơn hiển thị" value={summary.total} />
-        <SummaryItem label="Đang chờ" value={summary.pending} />
-        <SummaryItem label="Đã duyệt" value={summary.approved} />
-        <SummaryItem label="Từ chối" value={summary.rejected} />
+      <button className="btn danger hr-logout-btn" type="button" onClick={handleLogout}>
+        Đăng xuất
+      </button>
+    </div>
+
+    <div className="hr-summary-grid">
+      <SummaryItem label="Tổng đơn hiển thị" value={summary.total} />
+      <SummaryItem label="Đang chờ" value={summary.pending} />
+      <SummaryItem label="Đã duyệt" value={summary.approved} />
+      <SummaryItem label="Từ chối" value={summary.rejected} />
+    </div>
+
+    <Card title="Danh sách đơn phép">
+      <div className="hr-list-head">
+        <div>
+          <p className="muted">
+            Dashboard tự cập nhật mỗi 10 giây. Dữ liệu gốc được lưu trong Google Sheet.
+          </p>
+        </div>
+
+        <div className="hr-list-actions">
+          <button className="btn ghost" type="button" onClick={() => fetchRequests(password, false)}>
+            {loading ? 'Đang tải...' : 'Làm mới'}
+          </button>
+
+          <button className="btn primary" type="button" onClick={exportExcel}>
+            Xuất Excel
+          </button>
+        </div>
       </div>
 
-      <Card title="Danh sách đơn phép">
-        <div className="hr-list-head">
-          <div>
-            <p className="muted">
-              Dashboard tự cập nhật mỗi 10 giây. Dữ liệu gốc được lưu trong Google Sheet.
-            </p>
-          </div>
+      <div className="hr-filter-card">
+        <div className="hr-filter-grid">
+          <Field label="Tìm kiếm">
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Tìm mã đơn, tên, mã nhân viên, email, loại phép..."
+            />
+          </Field>
 
-          <div className="hr-list-actions">
-            <button className="btn ghost" type="button" onClick={() => fetchRequests(password, false)}>
-              {loading ? 'Đang tải...' : 'Làm mới'}
-            </button>
+          <Field label="Bộ phận">
+            <select
+              value={departmentFilter}
+              onChange={(event) => setDepartmentFilter(event.target.value)}
+            >
+              <option value="">Tất cả bộ phận</option>
+              {DEPARTMENTS.map((department) => (
+                <option key={department} value={department}>
+                  {department}
+                </option>
+              ))}
+            </select>
+          </Field>
 
-            <button className="btn primary" type="button" onClick={exportExcel}>
-              Xuất Excel
+          <Field label="Trạng thái">
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
+              <option value="">Tất cả trạng thái</option>
+              {FINAL_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Từ ngày bắt đầu nghỉ">
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(event) => setFromDate(event.target.value)}
+            />
+          </Field>
+
+          <Field label="Đến ngày bắt đầu nghỉ">
+            <input
+              type="date"
+              value={toDate}
+              onChange={(event) => setToDate(event.target.value)}
+            />
+          </Field>
+
+          <div className="hr-filter-clear">
+            <button className="btn light" type="button" onClick={resetFilters}>
+              Xóa lọc
             </button>
           </div>
         </div>
+      </div>
 
-        <div className="hr-filter-card">
-          <div className="hr-filter-grid">
-            <Field label="Tìm kiếm">
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Tìm mã đơn, tên, email, loại phép..."
-              />
-            </Field>
+      <p className="table-note">
+        Đang hiển thị <strong>{pageStart} - {pageEnd}</strong> / {filteredRequests.length} đơn phù hợp
+        <span className="table-note-total"> · Tổng dữ liệu: {requests.length} đơn</span>
+      </p>
 
-            <Field label="Bộ phận">
-              <select
-                value={departmentFilter}
-                onChange={(event) => setDepartmentFilter(event.target.value)}
-              >
-                <option value="">Tất cả bộ phận</option>
-                {DEPARTMENTS.map((department) => (
-                  <option key={department} value={department}>
-                    {department}
-                  </option>
-                ))}
-              </select>
-            </Field>
+      <div className="hr-table-wrap">
+        <table className="hr-table">
+          <thead>
+            <tr>
+              <th>Mã đơn</th>
+              <th>Nhân sự</th>
+              <th>Nghỉ phép</th>
+              <th>EC Leader</th>
+              <th>Line Manager</th>
+              <th>HR Manager</th>
+              <th>Trạng thái</th>
+              <th>Chi tiết</th>
+            </tr>
+          </thead>
 
-            <Field label="Trạng thái">
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-              >
-                <option value="">Tất cả trạng thái</option>
-                {FINAL_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Từ ngày bắt đầu nghỉ">
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(event) => setFromDate(event.target.value)}
-              />
-            </Field>
-
-            <Field label="Đến ngày bắt đầu nghỉ">
-              <input
-                type="date"
-                value={toDate}
-                onChange={(event) => setToDate(event.target.value)}
-              />
-            </Field>
-
-            <div className="hr-filter-clear">
-              <button className="btn light" type="button" onClick={resetFilters}>
-                Xóa lọc
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <p className="table-note">
-          Đang hiển thị <strong>{filteredRequests.length}</strong> / {requests.length} đơn.
-        </p>
-
-        <div className="hr-table-wrap">
-          <table className="hr-table">
-            <thead>
+          <tbody>
+            {filteredRequests.length === 0 ? (
               <tr>
-                <th>Mã đơn</th>
-                <th>Nhân sự</th>
-                <th>Nghỉ phép</th>
-                <th>Line Manager</th>
-                <th>HR Manager</th>
-                <th>Trạng thái</th>
-                <th>Chi tiết</th>
+                <td colSpan="8">
+                  <div className="hr-empty-state">
+                    Chưa có đơn phù hợp với bộ lọc hiện tại.
+                  </div>
+                </td>
               </tr>
-            </thead>
+            ) : (
+              paginatedRequests.map((item) => (
+                <tr key={item.requestId}>
+                  <td data-label="Mã đơn">
+                    <strong className="hr-request-id">{item.requestId}</strong>
+                  </td>
 
-            <tbody>
-              {filteredRequests.length === 0 ? (
-                <tr>
-                  <td colSpan="7">
-                    <div className="hr-empty-state">
-                      Chưa có đơn phù hợp với bộ lọc hiện tại.
-                    </div>
+                  <td data-label="Nhân sự">
+                    <strong>{item.fullName}</strong>
+                    {item.employeeCode && (
+                      <span className="muted">Mã NV: {item.employeeCode}</span>
+                    )}
+                  </td>
+
+                  <td data-label="Nghỉ phép">
+                    <strong>{item.leaveType}</strong>
+                  </td>
+
+                  <td data-label="EC Leader">
+                    {item.department === 'EC' ? (
+                      <StatusBadge status={item.ecLeaderStatus} />
+                    ) : (
+                      <span className="muted">Không áp dụng</span>
+                    )}
+                  </td>
+
+                  <td data-label="Line Manager">
+                    <StatusBadge status={item.lineStatus} />
+                  </td>
+
+                  <td data-label="HR Manager">
+                    <StatusBadge status={item.hrStatus} />
+                  </td>
+
+                  <td data-label="Trạng thái">
+                    <StatusBadge status={item.finalStatus} />
+                  </td>
+
+                  <td data-label="Chi tiết">
+                    <button
+                      type="button"
+                      className="hr-icon-btn"
+                      title="Xem chi tiết"
+                      aria-label={`Xem chi tiết đơn ${item.requestId}`}
+                      onClick={() => setSelectedRequest(item)}
+                    >
+                      <FiEye />
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                filteredRequests.map((item) => (
-                                
-                <tr key={item.requestId}>
-                <td>
-                    <strong className="hr-request-id">{item.requestId}</strong>
-                </td>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Card>
 
-                <td>
-                    <strong>{item.fullName}</strong>
-                </td>
-
-                <td>
-                    <strong>{item.leaveType}</strong>
-                </td>
-
-                <td>
-                    <StatusBadge status={item.lineStatus} />
-                </td>
-
-                <td>
-                    <StatusBadge status={item.hrStatus} />
-                </td>
-
-                <td>
-                    <StatusBadge status={item.finalStatus} />
-                </td>
-
-                <td>
-                    <button
-                    type="button"
-                    className="btn ghost btn-sm"
-                    onClick={() => setSelectedRequest(item)}
-                    >
-                    Xem chi tiết
-                    </button>
-                </td>
-                </tr>
-
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {selectedRequest && (
-        <div className="detail-modal-backdrop">
-          <div className="detail-modal">
-            <div className="detail-modal-header">
-              <div>
-                <p className="dashboard-kicker">Chi tiết đơn phép</p>
-                <h3>{selectedRequest.requestId}</h3>
-              </div>
-
-              <button
-                type="button"
-                className="btn ghost btn-sm"
-                onClick={() => setSelectedRequest(null)}
+   
+          {selectedRequest && (
+            <div
+              className="detail-modal-backdrop"
+              onClick={() => setSelectedRequest(null)}
+            >
+              <div
+                className="detail-modal"
+                onClick={(event) => event.stopPropagation()}
               >
-                Đóng
-              </button>
+          <div className="detail-modal-header">
+            <div>
+              <p className="dashboard-kicker">Chi tiết đơn phép</p>
+              <h3>{selectedRequest.requestId}</h3>
             </div>
 
-            <div className="detail-modal-status">
-              <StatusBadge status={selectedRequest.finalStatus} />
-              <span>Cập nhật: {selectedRequest.updatedAt || 'Chưa có thông tin'}</span>
-            </div>
+            <button
+              type="button"
+              className="btn ghost btn-sm"
+              onClick={() => setSelectedRequest(null)}
+            >
+              Đóng
+            </button>
+          </div>
 
-            <div className="detail-modal-grid">
-              <DetailItem label="Họ và tên" value={selectedRequest.fullName} />
-              <DetailItem label="Email nhân sự" value={selectedRequest.employeeEmail} />
-              <DetailItem label="Bộ phận" value={selectedRequest.department} />
-              <DetailItem label="Vị trí" value={selectedRequest.position} />
+          <div className="detail-modal-status">
+            <StatusBadge status={selectedRequest.finalStatus} />
+            <span>Cập nhật: {selectedRequest.updatedAt || 'Chưa có thông tin'}</span>
+          </div>
 
-              <DetailItem label="Loại nghỉ phép" value={selectedRequest.leaveType} />
-              <DetailItem label="Ngày bắt đầu nghỉ" value={selectedRequest.startDate} />
-              <DetailItem label="Ngày quay lại làm việc" value={selectedRequest.returnDate} />
-              <DetailItem label="Số ngày nghỉ" value={`${selectedRequest.totalDays} ngày`} />
+          <div className="detail-modal-grid">
+            <DetailItem label="Họ và tên" value={selectedRequest.fullName} />
+            <DetailItem label="Mã nhân viên" value={selectedRequest.employeeCode} />
+            <DetailItem label="Email nhân sự" value={selectedRequest.employeeEmail} />
+            <DetailItem label="Bộ phận" value={selectedRequest.department} />
+            <DetailItem label="Vị trí" value={selectedRequest.position} />
 
-              <DetailItem label="Thời gian nghỉ" value={selectedRequest.leaveSession} wide />
-              <DetailItem label="Lý do nghỉ" value={selectedRequest.reason} wide />
+            <DetailItem label="Loại nghỉ phép" value={selectedRequest.leaveType} />
+            <DetailItem label="Ngày bắt đầu nghỉ" value={selectedRequest.startDate} />
+            <DetailItem label="Ngày quay lại làm việc" value={selectedRequest.returnDate} />
+            <DetailItem label="Số ngày nghỉ" value={`${selectedRequest.totalDays} ngày`} />
 
-              <DetailItem label="Người nhận bàn giao" value={selectedRequest.handoverName} />
-              <DetailItem label="Email bàn giao" value={selectedRequest.handoverEmail} />
-              <DetailItem label="SĐT bàn giao" value={selectedRequest.handoverPhone || 'Không có'} />
-              <DetailItem label="Công việc bàn giao" value={selectedRequest.handoverDetails} wide />
+            <DetailItem label="Thời gian nghỉ" value={selectedRequest.leaveSession} wide />
+            <DetailItem label="Lý do nghỉ" value={selectedRequest.reason} wide />
 
-              <DetailItem label="Email Line Manager" value={selectedRequest.lineManagerEmail} />
-              <DetailItem label="Trạng thái Line Manager" value={selectedRequest.lineStatus} />
-              <DetailItem
-                label="Thời gian Line xử lý"
-                value={selectedRequest.lineDecisionAt || 'Chưa xử lý'}
-              />
+            <DetailItem label="Người nhận bàn giao" value={selectedRequest.handoverName} />
+            <DetailItem label="Email bàn giao" value={selectedRequest.handoverEmail} />
+            <DetailItem label="SĐT bàn giao" value={selectedRequest.handoverPhone || 'Không có'} />
+            <DetailItem label="Công việc bàn giao" value={selectedRequest.handoverDetails} wide />
 
-              <DetailItem label="Email HR Manager" value={selectedRequest.hrManagerEmail} />
-              <DetailItem label="Trạng thái HR Manager" value={selectedRequest.hrStatus} />
-              <DetailItem
-                label="Thời gian HR xử lý"
-                value={selectedRequest.hrDecisionAt || 'Chưa xử lý'}
-              />
-
-              {selectedRequest.lineRejectReason && (
+            {selectedRequest.department === 'EC' && (
+              <>
                 <DetailItem
-                  label="Lý do Line từ chối"
-                  value={selectedRequest.lineRejectReason}
+                  label="Email Team Lead/EC Leader"
+                  value={selectedRequest.ecLeaderEmail}
+                />
+                <DetailItem
+                  label="Trạng thái EC Leader"
+                  value={selectedRequest.ecLeaderStatus}
+                />
+                <DetailItem
+                  label="Thời gian EC Leader xử lý"
+                  value={selectedRequest.ecLeaderDecisionAt || 'Chưa xử lý'}
+                />
+              </>
+            )}
+
+            <DetailItem
+              label={selectedRequest.department === 'EC' ? 'Email EC Manager' : 'Email Line Manager'}
+              value={selectedRequest.lineManagerEmail}
+            />
+            <DetailItem
+              label={selectedRequest.department === 'EC' ? 'Trạng thái EC Manager' : 'Trạng thái Line Manager'}
+              value={selectedRequest.lineStatus}
+            />
+            <DetailItem
+              label={selectedRequest.department === 'EC' ? 'Thời gian EC Manager xử lý' : 'Thời gian Line xử lý'}
+              value={selectedRequest.lineDecisionAt || 'Chưa xử lý'}
+            />
+
+            <DetailItem label="Email HR Manager" value={selectedRequest.hrManagerEmail} />
+            <DetailItem label="Trạng thái HR Manager" value={selectedRequest.hrStatus} />
+            <DetailItem
+              label="Thời gian HR xử lý"
+              value={selectedRequest.hrDecisionAt || 'Chưa xử lý'}
+            />
+
+            {selectedRequest.department === 'EC' &&
+              isMeaningfulRejectReason(selectedRequest.ecLeaderRejectReason) && (
+                <DetailItem
+                  label="Lý do EC Leader từ chối"
+                  value={selectedRequest.ecLeaderRejectReason}
                   wide
                   danger
                 />
               )}
 
-              {selectedRequest.hrRejectReason && (
-                <DetailItem
-                  label="Lý do HR từ chối"
-                  value={selectedRequest.hrRejectReason}
-                  wide
-                  danger
-                />
-              )}
-            </div>
+            {selectedRequest.lineRejectReason && (
+              <DetailItem
+                label={selectedRequest.department === 'EC' ? 'Lý do EC Manager từ chối' : 'Lý do Line từ chối'}
+                value={selectedRequest.lineRejectReason}
+                wide
+                danger
+              />
+            )}
+
+            {selectedRequest.hrRejectReason && (
+              <DetailItem
+                label="Lý do HR từ chối"
+                value={selectedRequest.hrRejectReason}
+                wide
+                danger
+              />
+            )}
           </div>
         </div>
-      )}
-    </section>
-  );
+      </div>
+    )}
+  </section>
+);
 }
 
 function SummaryItem({ label, value }) {
@@ -539,6 +645,18 @@ function DetailItem({ label, value, wide = false, danger = false }) {
       </strong>
     </div>
   );
+}
+
+
+function isMeaningfulRejectReason(value) {
+  const text = String(value || '').trim();
+
+  if (!text) return false;
+
+  // Ẩn token uuid bị map nhầm, ví dụ: c67b44978b4b4493ba75c99a3e290978
+  if (/^[a-f0-9]{24,}$/i.test(text)) return false;
+
+  return true;
 }
 
 function toDateValue(value) {
