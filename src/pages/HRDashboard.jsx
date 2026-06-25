@@ -503,6 +503,33 @@ function HRDashboard() {
           </tbody>
         </table>
       </div>
+         {filteredRequests.length > PAGE_SIZE && (
+        <div className="hr-pagination">
+          <button
+            type="button"
+            className="hr-page-btn"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            aria-label="Trang trước"
+          >
+            <FiChevronLeft />
+          </button>
+
+          <div className="hr-page-info">
+            Trang <strong>{currentPage}</strong> / {totalPages}
+          </div>
+
+          <button
+            type="button"
+            className="hr-page-btn"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            aria-label="Trang sau"
+          >
+            <FiChevronRight />
+          </button>
+        </div>
+      )}
     </Card>
 
    

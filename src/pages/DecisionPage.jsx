@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+
 import { handleDecision } from '../api';
 import Card from '../components/Card';
 import Alert from '../components/Alert';
@@ -18,21 +19,43 @@ function DecisionPage() {
       requestId: searchParams.get('requestId') || '',
       role: searchParams.get('role') || '',
       decision: searchParams.get('decision') || '',
-      token: searchParams.get('token') || ''
+      token: searchParams.get('token') || '',
+      approver: searchParams.get('approver') || ''
     };
   }, []);
 
   const roleLabel = useMemo(() => {
+    if (params.approver === 'ec_leader') return 'Team Lead / EC Leader';
+    if (params.approver === 'ec_manager') return 'Line Manager / EC Manager';
+    if (params.approver === 'line_manager') return 'Line Manager';
+
     if (params.role === 'line') return 'Line Manager';
     if (params.role === 'hr') return 'HR Manager';
+
     return 'Người duyệt';
-  }, [params.role]);
+  }, [params.role, params.approver]);
 
   const decisionLabel = useMemo(() => {
     if (params.decision === 'approve') return 'Duyệt đơn';
     if (params.decision === 'reject') return 'Từ chối đơn';
     return 'Xử lý đơn';
   }, [params.decision]);
+
+  const processNote = useMemo(() => {
+    if (params.approver === 'ec_leader') {
+      return 'Sau khi EC Leader duyệt, đơn sẽ được chuyển tiếp đến Line Manager / EC Manager.';
+    }
+
+    if (params.approver === 'ec_manager') {
+      return 'Sau khi EC Manager duyệt, đơn sẽ được chuyển tiếp đến HR Manager.';
+    }
+
+    if (params.role === 'hr') {
+      return 'Đây là bước xử lý cấp cuối. Sau khi HR Manager duyệt hoặc từ chối, hệ thống sẽ gửi kết quả về email nhân sự.';
+    }
+
+    return 'Sau khi Line Manager duyệt, đơn sẽ được chuyển tiếp đến HR Manager.';
+  }, [params.role, params.approver]);
 
   useEffect(() => {
     const isValid =
@@ -110,7 +133,6 @@ function DecisionPage() {
           <img src="/company-logo.png" alt="WESET" />
         </div>
       </section>
-
       <section className="approval-info-grid">
         <div className="approval-mini-card">
           <span>Vai trò xử lý</span>
@@ -149,10 +171,11 @@ function DecisionPage() {
       )}
 
       {status === 'ready-reject' && (
-        <Card title="Xác nhận từ chối đơn">
+        <Card title={`Xác nhận từ chối đơn - ${roleLabel}`}>
           <form className="approval-reject-form" onSubmit={handleRejectSubmit}>
             <Alert type="warning">
-              <strong>Lưu ý:</strong> Vui lòng nhập rõ lý do từ chối để nhân sự
+              <strong>Lưu ý:</strong> Bạn đang xử lý đơn với vai trò{' '}
+              <strong>{roleLabel}</strong>. Vui lòng nhập rõ lý do từ chối để nhân sự
               nắm được thông tin và điều chỉnh khi cần.
             </Alert>
 
@@ -167,7 +190,7 @@ function DecisionPage() {
               <textarea
                 id="rejectReason"
                 value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
+                onChange={(event) => setRejectReason(event.target.value)}
                 placeholder="Nhập lý do từ chối đơn nghỉ phép"
                 rows={6}
                 required
@@ -178,7 +201,9 @@ function DecisionPage() {
               <button
                 type="button"
                 className="btn ghost"
-                onClick={() => window.location.href = '/'}
+                onClick={() => {
+                  window.location.href = '/';
+                }}
               >
                 Quay về trang chủ
               </button>
@@ -199,8 +224,13 @@ function DecisionPage() {
         <Card title="Xử lý thành công">
           <div className="approval-state approval-state-success">
             <div className="approval-state-icon success">✓</div>
+
             <h3>Thao tác đã được ghi nhận</h3>
             <p>{message}</p>
+
+            <Alert type="info">
+              {processNote}
+            </Alert>
 
             <div className="approval-result-box">
               <div>
@@ -223,7 +253,9 @@ function DecisionPage() {
               <button
                 type="button"
                 className="btn primary"
-                onClick={() => window.location.href = '/'}
+                onClick={() => {
+                  window.location.href = '/';
+                }}
               >
                 Về trang chủ
               </button>
@@ -236,6 +268,7 @@ function DecisionPage() {
         <Card title="Không thể xử lý đơn">
           <div className="approval-state approval-state-error">
             <div className="approval-state-icon error">!</div>
+
             <h3>Có lỗi xảy ra</h3>
             <p>{message}</p>
 
@@ -243,7 +276,9 @@ function DecisionPage() {
               <button
                 type="button"
                 className="btn ghost"
-                onClick={() => window.location.href = '/'}
+                onClick={() => {
+                  window.location.href = '/';
+                }}
               >
                 Quay về trang chủ
               </button>
