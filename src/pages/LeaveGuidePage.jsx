@@ -1,12 +1,11 @@
 import {
   FiFileText,
-  FiMail,
   FiUserCheck,
   FiCheckCircle,
   FiAlertTriangle,
   FiClock,
   FiMessageCircle,
-  FiArrowRight
+  FiUsers
 } from 'react-icons/fi';
 
 import Card from '../components/Card';
@@ -36,151 +35,165 @@ function LeaveGuidePage() {
     }
   ];
 
+  const guideSteps = [
+    {
+      icon: <FiFileText />,
+      step: 'Bước 1',
+      title: 'Nộp đơn online',
+      description:
+        'Nhân sự điền thông tin nghỉ phép, nội dung bàn giao, chọn Leader và Manager phù hợp trên hệ thống.',
+      note: 'Sau khi gửi thành công, hệ thống sẽ gửi email xác nhận kèm mã đơn phép.'
+    },
+    {
+      icon: <FiUsers />,
+      step: 'Bước 2',
+      title: 'Leader xử lý',
+      description:
+        'Leader của bộ phận nhận email thông báo và thực hiện duyệt hoặc từ chối đơn.',
+      note: 'Nếu Leader duyệt, đơn sẽ chuyển tiếp đến Line Manager/Manager.'
+    },
+    {
+      icon: <FiUserCheck />,
+      step: 'Bước 3',
+      title: 'Manager xử lý',
+      description:
+        'Sau khi Leader duyệt, đơn được chuyển đến Line Manager/Manager để xử lý cấp tiếp theo.',
+      note: 'Nếu Manager duyệt, đơn sẽ chuyển tiếp đến HR Manager.'
+    },
+    {
+      icon: <FiCheckCircle />,
+      step: 'Bước 4',
+      title: 'HR Manager xử lý',
+      description:
+        'HR Manager là cấp duyệt cuối cùng và cập nhật trạng thái hoàn tất của đơn nghỉ phép.',
+      note: 'Nhân sự sẽ nhận email thông báo kết quả cuối cùng.'
+    }
+  ];
+
   return (
     <section className="leave-guide-page stack">
       <Card title="Quy trình duyệt đơn nghỉ phép">
         <Alert type="info">
-          Sau khi gửi đơn thành công, nhân sự vui lòng lưu lại <strong>mã đơn phép</strong> để tra cứu trạng thái khi cần.
+          Sau khi gửi đơn thành công, nhân sự vui lòng lưu lại{' '}
+          <strong>mã đơn phép</strong> để tra cứu trạng thái khi cần.
         </Alert>
 
-        <div className="guide-flow">
-          <div className="guide-flow-step">
-            <div className="guide-flow-icon">
-              <FiFileText />
+        <div className="guide-flow-clean">
+          {guideSteps.map((item) => (
+            <div className="guide-clean-step" key={item.step}>
+              <div className="guide-clean-top">
+                <div className="guide-clean-icon">
+                  {item.icon}
+                </div>
+
+                <span className="guide-flow-badge">{item.step}</span>
+              </div>
+
+              <div className="guide-clean-content">
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+
+                <div className="guide-clean-note">
+                  {item.note}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="guide-warning-panel">
+          <div className="guide-warning-header">
+            <div className="guide-warning-icon">
+              <FiAlertTriangle />
             </div>
 
-            <div className="guide-flow-content">
-              <span className="guide-flow-badge">Bước 1</span>
-              <h3>Nộp đơn online</h3>
+            <div>
+              <span>Lưu ý quan trọng</span>
+              <h3>Những điểm cần nắm trước khi gửi đơn</h3>
+            </div>
+          </div>
+
+          <div className="guide-warning-grid-3">
+            <div className="guide-warning-card guide-warning-card-danger">
+              <span className="guide-warning-label">Trường hợp từ chối</span>
 
               <p>
-                Nhân sự điền đầy đủ thông tin nghỉ phép, thông tin bàn giao công việc và gửi đơn trên hệ thống.
+                Nếu <strong>Leader hoặc Line Manager/Manager từ chối</strong>, đơn sẽ{' '}
+                <strong>không chuyển tiếp đến cấp duyệt tiếp theo</strong>. Hệ thống sẽ
+                gửi thông báo kết quả trực tiếp về email của nhân sự.
               </p>
-
-              <ul>
-                <li>Gửi đơn thành công trên hệ thống</li>
-                <li>Nhận email xác nhận kèm mã đơn phép</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="guide-flow-arrow">
-            <FiArrowRight />
-          </div>
-
-          <div className="guide-flow-step">
-            <div className="guide-flow-icon">
-              <FiUserCheck />
             </div>
 
-            <div className="guide-flow-content">
-              <span className="guide-flow-badge">Bước 2</span>
-              <h3>Line Manager xử lý</h3>
+            <div className="guide-warning-card guide-warning-card-ec">
+              <span className="guide-warning-label">Áp dụng cho mọi bộ phận</span>
 
               <p>
-                Line Manager nhận email thông báo và thực hiện duyệt hoặc từ chối đơn.
+                Tất cả đơn nghỉ phép đều cần được xử lý theo thứ tự:{' '}
+                <strong>Leader duyệt trước</strong>, sau đó chuyển đến{' '}
+                <strong>Line Manager/Manager</strong> và cuối cùng là{' '}
+                <strong>HR Manager</strong>.
               </p>
 
-              <ul>
-                <li>Nếu duyệt, đơn chuyển tiếp đến HR Manager</li>
-                <li>Nếu từ chối, quy trình dừng tại đây và hệ thống gửi kết quả cho nhân sự</li>
-              </ul>
+              <div className="guide-mini-flow">
+                <div className="guide-mini-step">
+                  <div className="guide-mini-step-number">01</div>
+                  <span>Nhân sự nộp đơn</span>
+                </div>
+
+                <div className="guide-mini-step">
+                  <div className="guide-mini-step-number">02</div>
+                  <span>Leader duyệt</span>
+                </div>
+
+                <div className="guide-mini-step">
+                  <div className="guide-mini-step-number">03</div>
+                  <span>Manager duyệt</span>
+                </div>
+
+                <div className="guide-mini-step">
+                  <div className="guide-mini-step-number">04</div>
+                  <span>HR Manager duyệt</span>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="guide-flow-arrow">
-            <FiArrowRight />
-          </div>
-
-          <div className="guide-flow-step">
-            <div className="guide-flow-icon">
-              <FiCheckCircle />
-            </div>
-
-            <div className="guide-flow-content">
-              <span className="guide-flow-badge">Bước 3</span>
-              <h3>HR Manager xử lý</h3>
+            <div className="guide-warning-card guide-warning-card-danger">
+              <span className="guide-warning-label">Nghỉ ốm hưởng chế độ BHXH</span>
 
               <p>
-                Nếu Line Manager đã duyệt, đơn sẽ được chuyển tiếp đến HR Manager để duyệt cấp cuối.
+                Trường hợp Người lao động nghỉ ốm đau có hưởng chế độ BHXH, có thể
+                đính kèm hình ảnh hoặc file PDF{' '}
+                <strong>
+                  “GIẤY CHỨNG NHẬN NGHỈ VIỆC HƯỞNG BẢO HIỂM XÃ HỘI”
+                </strong>{' '}
+                của bệnh viện khi gửi đơn để HR kiểm tra khi cần.
               </p>
-
-              <ul>
-                <li>HR Manager duyệt hoặc từ chối</li>
-                <li>Hệ thống cập nhật trạng thái cuối cùng</li>
-                <li>Nhân sự nhận email thông báo kết quả</li>
-              </ul>
             </div>
           </div>
         </div>
-
-    <div className="guide-warning-panel">
-  <div className="guide-warning-header">
-    <div className="guide-warning-icon">
-      <FiAlertTriangle />
-    </div>
-
-    <div>
-      <span>Lưu ý quan trọng</span>
-      <h3>Những điểm cần nắm trước khi gửi đơn</h3>
-    </div>
-  </div>
-
-  <div className="guide-warning-grid">
-    <div className="guide-warning-card guide-warning-card-danger">
-      <span className="guide-warning-label">Trường hợp từ chối</span>
-
-      <p>
-        Nếu <strong>Line Manager từ chối</strong>, đơn sẽ{' '}
-        <strong>không chuyển tiếp đến HR Manager</strong>. Hệ thống sẽ gửi thông báo
-        kết quả trực tiếp về email của nhân sự.
-      </p>
-    </div>
-
-    <div className="guide-warning-card guide-warning-card-ec">
-      <span className="guide-warning-label">Riêng bộ phận EC</span>
-
-      <p>
-        Đơn nghỉ phép của nhân sự EC cần được{' '}
-        <strong>Team Lead / EC Leader duyệt trước</strong>, sau đó chuyển tiếp đến{' '}
-        <strong>Line Manager / EC Manager</strong> và cuối cùng là{' '}
-        <strong>HR Manager</strong>.
-      </p>
-
-      <div className="guide-ec-timeline">
-        <div className="guide-ec-step">Nhân sự nộp đơn</div>
-        <FiArrowRight />
-        <div className="guide-ec-step">EC Leader duyệt</div>
-        <FiArrowRight />
-        <div className="guide-ec-step">EC Manager duyệt</div>
-        <FiArrowRight />
-        <div className="guide-ec-step">HR Manager duyệt</div>
-      </div>
-    </div>
-  </div>
-</div>
       </Card>
 
       <Card title="Lưu ý về thời gian báo trước">
-        <Alert type="warning">
-          Nhân sự cần gửi đơn nghỉ phép đúng thời gian báo trước theo quy định để đảm bảo việc sắp xếp công việc và bàn giao được thực hiện kịp thời.
-        </Alert>
+        <div className="notice-top-text">
+          Nhân sự cần gửi đơn nghỉ phép đúng thời gian báo trước theo quy định để đảm bảo
+          việc sắp xếp công việc và bàn giao được thực hiện kịp thời.
+        </div>
 
-        <div className="notice-rule-list">
-          <div className="notice-rule-head">
+        <div className="notice-table-card">
+          <div className="notice-table-head">
             <span>Số ngày nghỉ</span>
             <span>Thời gian báo trước</span>
           </div>
 
           {noticeRules.map((item) => (
-            <div className="notice-rule-row" key={item.range}>
-              <div className="notice-rule-range">
+            <div className="notice-table-row" key={item.range}>
+              <div className="notice-table-left">
                 <FiClock />
                 <strong>{item.range}</strong>
               </div>
 
-              <div className="notice-rule-days">
-                Báo trước <strong>{item.notice}</strong>
+              <div className="notice-table-right">
+                <span className="notice-pill">Báo trước {item.notice}</span>
               </div>
             </div>
           ))}

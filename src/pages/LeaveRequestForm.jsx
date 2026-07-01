@@ -1,5 +1,4 @@
-
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { getLineManagers, submitLeaveRequest } from '../api';
 import Card from '../components/Card';
@@ -9,8 +8,13 @@ import Field from '../components/Field';
 import {
   DEPARTMENTS,
   LEAVE_TYPES,
-  INITIAL_LEAVE_FORM
+  INITIAL_LEAVE_FORM,
+  LEADER_LABELS,
+  MANAGER_LABELS,
+  BHXH_SICK_LEAVE_NOTICE
 } from '../constants/options';
+
+const MAX_CERTIFICATE_SIZE_MB = 5;
 
 function LeaveRequestForm() {
   const [form, setForm] = useState(INITIAL_LEAVE_FORM);
@@ -21,7 +25,12 @@ function LeaveRequestForm() {
   const [successModal, setSuccessModal] = useState(null);
   const [copied, setCopied] = useState(false);
 
+  const certificateInputRef = useRef(null);
+
   const totalDaysNumber = Number(form.totalDays);
+const hasCertificateFile = Boolean(
+  form.sickLeaveCertificateBase64 || form.sickLeaveCertificateUrl
+);
 
   const hasHalfDay = useMemo(() => {
     if (!form.totalDays) return false;
@@ -30,46 +39,47 @@ function LeaveRequestForm() {
     return totalDaysNumber % 1 !== 0;
   }, [form.totalDays, totalDaysNumber]);
 
+  const isSingleHalfDay = useMemo(() => {
+    return totalDaysNumber === 0.5;
+  }, [totalDaysNumber]);
+
+  const leaderLabel = useMemo(() => {
+    return LEADER_LABELS?.[form.department] || 'Leader';
+  }, [form.department]);
+
+  const managerLabel = useMemo(() => {
+    return MANAGER_LABELS?.[form.department] || 'Line Manager/Manager';
+  }, [form.department]);
+
+  const leaderOptions = useMemo(() => {
+    if (!form.department) return [];
+
+    return lineManagers.filter(
+      (manager) =>
+        manager.department === form.department &&
+        isLeaderManager(manager)
+    );
+  }, [lineManagers, form.department]);
+
+  const lineManagerOptions = useMemo(() => {
+    if (!form.department) return [];
+
+    return lineManagers.filter(
+      (manager) =>
+        manager.department === form.department &&
+        isLineManager(manager)
+    );
+  }, [lineManagers, form.department]);
+
   const leaveTimeText = useMemo(() => {
     return buildLeaveTimeText({
       ...form,
       startDate: formatDateVN(form.startDate),
       returnDate: formatDateVN(form.returnDate),
-      hasHalfDay
+      hasHalfDay,
+      isSingleHalfDay
     });
-  }, [form, hasHalfDay]);
-const isECDepartment = form.department === 'EC';
-
-const teamLeadOptions = useMemo(() => {
-  if (!isECDepartment) return [];
-
-  return lineManagers.filter(
-    (manager) =>
-      manager.department === 'EC' &&
-      manager.role === 'EC_LEADER'
-  );
-}, [lineManagers, isECDepartment]);
-
-const lineManagerOptions = useMemo(() => {
-  if (!form.department) return [];
-
-  if (form.department === 'EC') {
-    return lineManagers.filter(
-      (manager) =>
-        manager.department === 'EC' &&
-        manager.role === 'LINE_MANAGER'
-    );
-  }
-
-  return lineManagers.filter(
-    (manager) =>
-      manager.department === form.department &&
-      (
-        manager.role === 'LINE_MANAGER' ||
-        (form.department === 'GA' && manager.role === 'HR_MANAGER')
-      )
-  );
-}, [lineManagers, form.department]);
+  }, [form, hasHalfDay, isSingleHalfDay]);
 
   useEffect(() => {
     async function loadLineManagers() {
@@ -90,37 +100,124 @@ const lineManagerOptions = useMemo(() => {
   function handleChange(event) {
     const { name, value, type, checked } = event.target;
 
+    if (name === 'department') {
+      setForm((prev) => ({
+        ...prev,
+        department: value,
+        leaderEmail: '',
+        teamLeadEmail: '',
+        lineManagerEmail: ''
+      }));
+
+      return;
+    }
+
+    if (name === 'leaderEmail') {
+      setForm((prev) => ({
+        ...prev,
+        leaderEmail: value,
+
+        // Giữ tương thích với Apps Script cũ nếu còn đọc teamLeadEmail
+        teamLeadEmail: value
+      }));
+
+      return;
+    }
+
     if (name === 'totalDays') {
       const numberValue = Number(value);
       const isHalfDayValue =
         value !== '' && !Number.isNaN(numberValue) && numberValue % 1 !== 0;
+      const isSingleHalfDayValue = numberValue === 0.5;
 
       setForm((prev) => ({
         ...prev,
         totalDays: value,
-        startSession: isHalfDayValue ? prev.startSession || 'Sáng' : '',
-        returnSession: isHalfDayValue ? prev.returnSession || 'Sáng' : '',
+        halfDaySession: isSingleHalfDayValue ? prev.halfDaySession || 'Sáng' : prev.halfDaySession,
+        startSession: isHalfDayValue && !isSingleHalfDayValue ? prev.startSession || 'Sáng' : '',
+        returnSession: isHalfDayValue && !isSingleHalfDayValue ? prev.returnSession || 'Sáng' : '',
         leaveSession: ''
       }));
 
       return;
     }
 
-   if (name === 'department') {
-  setForm((prev) => ({
-    ...prev,
-    department: value,
-    lineManagerEmail: '',
-    teamLeadEmail: ''
-  }));
-
-  return;
-}
-
     setForm((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+  }
+
+  async function handleCertificateFileChange(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      setForm((prev) => ({
+        ...prev,
+        sickLeaveCertificateBase64: '',
+        sickLeaveCertificateFileName: '',
+        sickLeaveCertificateMimeType: ''
+      }));
+
+      return;
+    }
+const isValidCertificateFile =
+  file.type.startsWith('image/') ||
+  file.type === 'application/pdf' ||
+  file.name.toLowerCase().endsWith('.pdf');
+
+if (!isValidCertificateFile) {
+  event.target.value = '';
+
+  setForm((prev) => ({
+    ...prev,
+    sickLeaveCertificateBase64: '',
+    sickLeaveCertificateFileName: '',
+    sickLeaveCertificateMimeType: ''
+  }));
+
+  setNotice({
+    type: 'error',
+    message: 'Minh chứng chỉ hỗ trợ file hình ảnh hoặc PDF.'
+  });
+
+  return;
+}
+    const fileSizeMb = file.size / 1024 / 1024;
+
+    if (fileSizeMb > MAX_CERTIFICATE_SIZE_MB) {
+      event.target.value = '';
+
+      setForm((prev) => ({
+        ...prev,
+        sickLeaveCertificateBase64: '',
+        sickLeaveCertificateFileName: '',
+        sickLeaveCertificateMimeType: ''
+      }));
+
+      setNotice({
+        type: 'error',
+        message: `File giấy chứng nhận không được vượt quá ${MAX_CERTIFICATE_SIZE_MB}MB.`
+      });
+
+      return;
+    }
+
+    try {
+      const base64 = await readFileAsDataUrl(file);
+
+      setForm((prev) => ({
+        ...prev,
+        sickLeaveCertificateBase64: base64,
+        sickLeaveCertificateFileName: file.name,
+        sickLeaveCertificateMimeType: file.type || 'image/png'
+      }));
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        message: 'Không thể đọc file giấy chứng nhận. Vui lòng chọn lại file khác.'
+      });
+    }
   }
 
   function resetForm() {
@@ -129,39 +226,44 @@ const lineManagerOptions = useMemo(() => {
     setLastRequestId('');
     setSuccessModal(null);
     setCopied(false);
-  }
 
-
-async function copyRequestId() {
-  if (!successModal?.requestId) return;
-
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(successModal.requestId);
-    } else {
-      const textarea = document.createElement('textarea');
-      textarea.value = successModal.requestId;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
+    if (certificateInputRef.current) {
+      certificateInputRef.current.value = '';
     }
-
-    setCopied(true);
-
-    setTimeout(() => {
-      setCopied(false);
-    }, 1600);
-  } catch (error) {
-    setNotice({
-      type: 'error',
-      message: 'Không thể copy mã đơn. Vui lòng copy thủ công.'
-    });
   }
-}
+
+  async function copyRequestId() {
+    if (!successModal?.requestId) return;
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(successModal.requestId);
+      } else {
+        const textarea = document.createElement('textarea');
+
+        textarea.value = successModal.requestId;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 1600);
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        message: 'Không thể copy mã đơn. Vui lòng copy thủ công.'
+      });
+    }
+  }
 
   function closeSuccessModal() {
     setSuccessModal(null);
@@ -173,6 +275,10 @@ async function copyRequestId() {
       throw new Error('Vui lòng nhập họ và tên.');
     }
 
+    if (!form.employeeCode.trim()) {
+      throw new Error('Vui lòng nhập mã nhân viên.');
+    }
+
     if (!form.department) {
       throw new Error('Vui lòng chọn bộ phận.');
     }
@@ -180,20 +286,19 @@ async function copyRequestId() {
     if (!form.position.trim()) {
       throw new Error('Vui lòng nhập vị trí.');
     }
-    if (!form.employeeCode.trim()) {
-  throw new Error('Vui lòng nhập mã nhân viên.');
+
+    if (!form.leaderEmail) {
+      throw new Error('Vui lòng chọn Leader.');
+    }
+
+    if (!form.lineManagerEmail) {
+      throw new Error('Vui lòng chọn Line Manager/Manager.');
     }
 
     if (!form.employeeEmail.trim()) {
       throw new Error('Vui lòng nhập email nhân sự.');
     }
 
-    if (!form.lineManagerEmail) {
-      throw new Error('Vui lòng chọn quản lý trực tiếp.');
-    }
-    if (form.department === 'EC' && !form.teamLeadEmail) {
-  throw new Error('Vui lòng chọn Team Lead/EC Leader.');
-}
     if (!form.startDate) {
       throw new Error('Vui lòng chọn ngày bắt đầu nghỉ.');
     }
@@ -218,14 +323,16 @@ async function copyRequestId() {
       throw new Error('Nếu nghỉ nguyên ngày, ngày quay lại làm việc phải sau ngày bắt đầu nghỉ.');
     }
 
-    if (hasHalfDay && (!form.startSession || !form.returnSession)) {
-      throw new Error('Vui lòng chọn buổi bắt đầu nghỉ và buổi quay lại làm việc.');
+    if (hasHalfDay && isSameDate(form.startDate, form.returnDate) && totalDaysNumber !== 0.5) {
+      throw new Error('Nếu nghỉ trong cùng một ngày, số ngày nghỉ chỉ có thể là 0.5 ngày.');
     }
 
-    if (hasHalfDay && isInvalidSameDaySession(form)) {
-      throw new Error(
-        'Nếu nghỉ nửa buổi trong cùng một ngày, hệ thống chỉ hỗ trợ nghỉ buổi sáng và quay lại làm việc buổi chiều.'
-      );
+    if (isSingleHalfDay && !form.halfDaySession) {
+      throw new Error('Vui lòng chọn buổi nghỉ.');
+    }
+
+    if (hasHalfDay && !isSingleHalfDay && (!form.startSession || !form.returnSession)) {
+      throw new Error('Vui lòng chọn buổi bắt đầu nghỉ và buổi quay lại làm việc.');
     }
 
     if (!leaveTimeText) {
@@ -238,6 +345,10 @@ async function copyRequestId() {
 
     if (!form.handoverName.trim()) {
       throw new Error('Vui lòng nhập họ tên người nhận bàn giao.');
+    }
+
+    if (!form.handoverEmployeeCode.trim()) {
+      throw new Error('Vui lòng nhập mã nhân viên người nhận bàn giao.');
     }
 
     if (!form.handoverEmail.trim()) {
@@ -264,13 +375,26 @@ async function copyRequestId() {
       validateFormBeforeSubmit();
 
       const payload = {
-  ...form,
-  employeeCode: form.employeeCode.trim(),
-  position: form.position.trim(),
-  startDate: formatDateVN(form.startDate),
-  returnDate: formatDateVN(form.returnDate),
-  leaveSession: leaveTimeText
-};
+        ...form,
+        fullName: form.fullName.trim(),
+        employeeCode: form.employeeCode.trim(),
+        department: form.department.trim(),
+        position: form.position.trim(),
+        employeeEmail: form.employeeEmail.trim(),
+        leaderEmail: form.leaderEmail,
+        teamLeadEmail: form.leaderEmail,
+        lineManagerEmail: form.lineManagerEmail,
+        startDate: formatDateVN(form.startDate),
+        returnDate: formatDateVN(form.returnDate),
+        leaveSession: leaveTimeText,
+        reason: form.reason.trim(),
+        handoverName: form.handoverName.trim(),
+        handoverEmployeeCode: form.handoverEmployeeCode.trim(),
+        handoverEmail: form.handoverEmail.trim(),
+        handoverPhone: form.handoverPhone.trim(),
+        handoverDetails: form.handoverDetails.trim(),
+      hasBhxhSickLeave: hasCertificateFile
+      };
 
       const response = await submitLeaveRequest(payload);
 
@@ -287,6 +411,10 @@ async function copyRequestId() {
       });
       setCopied(false);
       setForm(INITIAL_LEAVE_FORM);
+
+      if (certificateInputRef.current) {
+        certificateInputRef.current.value = '';
+      }
     } catch (error) {
       setNotice({
         type: 'error',
@@ -316,15 +444,17 @@ async function copyRequestId() {
               required
             />
           </Field>
+
           <Field label="Mã nhân viên *">
-          <input
-            name="employeeCode"
-            value={form.employeeCode}
-            onChange={handleChange}
-            placeholder="Nhập mã nhân viên"
-            required
-          />
-        </Field>
+            <input
+              name="employeeCode"
+              value={form.employeeCode}
+              onChange={handleChange}
+              placeholder="Nhập mã nhân viên"
+              required
+            />
+          </Field>
+
           <Field label="Bộ phận *">
             <select
               name="department"
@@ -333,6 +463,7 @@ async function copyRequestId() {
               required
             >
               <option value="">Chọn bộ phận</option>
+
               {DEPARTMENTS.map((department) => (
                 <option key={department} value={department}>
                   {department}
@@ -350,25 +481,31 @@ async function copyRequestId() {
               required
             />
           </Field>
-              {isECDepartment && (
-          <Field label="Team Lead / EC Leader *">
+
+          <Field label={`${leaderLabel} *`}>
             <select
-              name="teamLeadEmail"
-              value={form.teamLeadEmail}
+              name="leaderEmail"
+              value={form.leaderEmail}
               onChange={handleChange}
+              disabled={!form.department}
               required
             >
-              <option value="">Chọn Team Lead / EC Leader</option>
+              <option value="">
+                {!form.department ? 'Chọn bộ phận trước' : `Chọn ${leaderLabel}`}
+              </option>
 
-              {teamLeadOptions.map((leader) => (
-                <option key={leader.email + leader.position} value={leader.email}>
+              {leaderOptions.map((leader) => (
+                <option
+                  key={`${leader.email}-${leader.position}-${leader.role}-leader`}
+                  value={leader.email}
+                >
                   {leader.label}
                 </option>
               ))}
             </select>
           </Field>
-        )}
-          <Field label="Quản lý trực tiếp *">
+
+          <Field label={`${managerLabel} *`}>
             <select
               name="lineManagerEmail"
               value={form.lineManagerEmail}
@@ -377,14 +514,17 @@ async function copyRequestId() {
               required
             >
               <option value="">
-                {!form.department ? 'Chọn bộ phận trước' : 'Chọn Line Manager'}
+                {!form.department ? 'Chọn bộ phận trước' : `Chọn ${managerLabel}`}
               </option>
 
               {lineManagerOptions.map((manager) => (
-              <option key={manager.email + manager.position} value={manager.email}>
-                {manager.label}
-              </option>
-            ))}
+                <option
+                  key={`${manager.email}-${manager.position}-${manager.role}-manager`}
+                  value={manager.email}
+                >
+                  {manager.label}
+                </option>
+              ))}
             </select>
           </Field>
 
@@ -451,7 +591,21 @@ async function copyRequestId() {
             </select>
           </Field>
 
-          {hasHalfDay && (
+          {isSingleHalfDay && (
+            <Field label="Nghỉ buổi *">
+              <select
+                name="halfDaySession"
+                value={form.halfDaySession}
+                onChange={handleChange}
+                required
+              >
+                <option value="Sáng">Sáng</option>
+                <option value="Chiều">Chiều</option>
+              </select>
+            </Field>
+          )}
+
+          {hasHalfDay && !isSingleHalfDay && (
             <>
               <Field label="Nghỉ từ buổi *">
                 <select
@@ -495,12 +649,74 @@ async function copyRequestId() {
               required
             />
           </Field>
+
+        <div className="bhxh-upload-card full-row">
+  <div className="bhxh-upload-content">
+    <strong>Lưu ý về hồ sơ nghỉ ốm hưởng BHXH</strong>
+
+    <p>
+      Trường hợp Người lao động nghỉ ốm đau có hưởng chế độ BHXH, vui lòng đính kèm
+      hình ảnh hoặc file PDF{' '}
+      <strong>“GIẤY CHỨNG NHẬN NGHỈ VIỆC HƯỞNG BẢO HIỂM XÃ HỘI”</strong> của bệnh viện
+      để HR kiểm tra khi cần.
+    </p>
+
+    <p className="muted">
+      Hỗ trợ file ảnh hoặc PDF, tối đa {MAX_CERTIFICATE_SIZE_MB}MB.
+    </p>
+  </div>
+
+  <div className="bhxh-upload-action">
+    <input
+      ref={certificateInputRef}
+      type="file"
+      accept="image/*,.pdf,application/pdf"
+      onChange={handleCertificateFileChange}
+      className="hidden-file-input"
+      id="sickLeaveCertificate"
+    />
+
+    <label htmlFor="sickLeaveCertificate" className="btn light bhxh-upload-btn">
+      Tải lên minh chứng
+    </label>
+  </div>
+
+  {form.sickLeaveCertificateFileName && (
+    <div className="bhxh-file-preview">
+      <span>
+        File đã chọn: <strong>{form.sickLeaveCertificateFileName}</strong>
+      </span>
+
+      <button
+        type="button"
+        className="btn ghost btn-sm"
+        onClick={() => {
+          setForm((prev) => ({
+            ...prev,
+            sickLeaveCertificateBase64: '',
+            sickLeaveCertificateFileName: '',
+            sickLeaveCertificateMimeType: '',
+            sickLeaveCertificateUrl: ''
+          }));
+
+          if (certificateInputRef.current) {
+            certificateInputRef.current.value = '';
+          }
+        }}
+      >
+        Xóa file
+      </button>
+    </div>
+  )}
+</div>
+          
         </div>
       </Card>
 
       <Card title="3. Thông tin bàn giao công việc">
         <Alert type="info">
-          <strong>Lưu ý:</strong> Nhân sự xác nhận đã trao đổi nội dung công việc với Người nhận bàn giao.
+          <strong>Lưu ý:</strong> Nhân sự xác nhận đã trao đổi nội dung công việc với
+          Người nhận bàn giao.
         </Alert>
 
         <div className="form-grid">
@@ -510,6 +726,16 @@ async function copyRequestId() {
               value={form.handoverName}
               onChange={handleChange}
               placeholder="Nhập họ tên người nhận bàn giao"
+              required
+            />
+          </Field>
+
+          <Field label="Mã nhân viên người nhận bàn giao *">
+            <input
+              name="handoverEmployeeCode"
+              value={form.handoverEmployeeCode}
+              onChange={handleChange}
+              placeholder="Nhập mã nhân viên người nhận bàn giao"
               required
             />
           </Field>
@@ -545,31 +771,31 @@ async function copyRequestId() {
           </Field>
         </div>
 
-      <div className="policy-confirm-box">
-      <label className="policy-check">
-        <input
-          type="checkbox"
-          name="policyAccepted"
-          checked={form.policyAccepted}
-          onChange={handleChange}
-          required
-        />
+        <div className="policy-confirm-box">
+          <label className="policy-check">
+            <input
+              type="checkbox"
+              name="policyAccepted"
+              checked={form.policyAccepted}
+              onChange={handleChange}
+              required
+            />
 
-        <span>
-          Trước khi nộp Đơn xin nghỉ phép, nhân viên xác nhận đã đọc và hiểu những{' '}
-          <a
-            href="https://drive.google.com/file/d/1yXxqxxUoilTAFQpvKXmyvQIPdyaHslmp/view?usp=sharing"
-            target="_blank"
-            rel="noreferrer"
-            className="policy-link"
-          >
-            quy định của Công ty
-          </a>
-          . Bất kỳ thông tin nào do nhân viên cung cấp không đúng sự thật sẽ được xem là
-          vi phạm Quy định Công ty và bị xem xét xử lý vi phạm kỷ luật.
-        </span>
-      </label>
-    </div>
+            <span>
+              Trước khi nộp Đơn xin nghỉ phép, nhân viên xác nhận đã đọc và hiểu những{' '}
+              <a
+                href="https://drive.google.com/file/d/1yXxqxxUoilTAFQpvKXmyvQIPdyaHslmp/view?usp=sharing"
+                target="_blank"
+                rel="noreferrer"
+                className="policy-link"
+              >
+                quy định của Công ty
+              </a>
+              . Bất kỳ thông tin nào do nhân viên cung cấp không đúng sự thật sẽ được xem là
+              vi phạm Quy định Công ty và bị xem xét xử lý vi phạm kỷ luật.
+            </span>
+          </label>
+        </div>
 
         <div className="actions">
           <button type="button" className="btn ghost" onClick={resetForm}>
@@ -626,10 +852,12 @@ async function copyRequestId() {
 function buildLeaveTimeText({
   startDate,
   returnDate,
+  halfDaySession,
   startSession,
   returnSession,
   totalDays,
-  hasHalfDay
+  hasHalfDay,
+  isSingleHalfDay
 }) {
   if (!startDate || !returnDate || !totalDays) {
     return '';
@@ -641,16 +869,26 @@ function buildLeaveTimeText({
     return `Nghỉ từ ngày ${startDate}, quay lại làm việc ngày ${returnDate}${totalText}`;
   }
 
-  if (!startSession || !returnSession) {
-    return '';
-  }
+  if (isSingleHalfDay) {
+    if (!halfDaySession) return '';
 
-  if (startDate === returnDate) {
-    if (startSession === 'Sáng' && returnSession === 'Chiều') {
-      return `Nghỉ buổi sáng ngày ${startDate}, quay lại làm việc buổi chiều cùng ngày${totalText}`;
+    if (halfDaySession === 'Sáng') {
+      if (startDate === returnDate) {
+        return `Nghỉ buổi sáng ngày ${startDate}, quay lại làm việc buổi chiều cùng ngày${totalText}`;
+      }
+
+      return `Nghỉ buổi sáng ngày ${startDate}, quay lại làm việc ngày ${returnDate}${totalText}`;
     }
 
-    return `Thời gian nghỉ chưa hợp lệ${totalText}`;
+    if (startDate === returnDate) {
+      return `Nghỉ buổi chiều ngày ${startDate}, quay lại làm việc vào ngày làm việc tiếp theo${totalText}`;
+    }
+
+    return `Nghỉ buổi chiều ngày ${startDate}, quay lại làm việc ngày ${returnDate}${totalText}`;
+  }
+
+  if (!startSession || !returnSession) {
+    return '';
   }
 
   if (startSession === 'Chiều' && returnSession === 'Sáng') {
@@ -672,12 +910,30 @@ function buildLeaveTimeText({
   return `Nghỉ từ ngày ${startDate}, quay lại làm việc ngày ${returnDate}${totalText}`;
 }
 
-function isInvalidSameDaySession({ startDate, returnDate, startSession, returnSession }) {
-  if (startDate !== returnDate) {
-    return false;
-  }
+function isLeaderManager(manager) {
+  if (manager.isLeader) return true;
 
-  return !(startSession === 'Sáng' && returnSession === 'Chiều');
+  return hasRole(manager.role, 'LEADER') || hasRole(manager.role, 'EC_LEADER');
+}
+
+function isLineManager(manager) {
+  if (manager.isLineManager) return true;
+
+  return (
+    hasRole(manager.role, 'LINE_MANAGER') ||
+    hasRole(manager.role, 'MANAGER') ||
+    hasRole(manager.role, 'HR_MANAGER')
+  );
+}
+
+function hasRole(roleText, roleToFind) {
+  const text = String(roleText || '').trim();
+
+  if (!text) return false;
+
+  const roles = text.split(/[,;|]/).map((role) => role.trim());
+
+  return roles.includes(roleToFind) || text === roleToFind;
 }
 
 function isStartDateAfterReturnDate(startDate, returnDate) {
@@ -698,6 +954,16 @@ function formatDateVN(value) {
   if (!year || !month || !day) return value;
 
   return `${day}/${month}/${year}`;
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 export default LeaveRequestForm;
