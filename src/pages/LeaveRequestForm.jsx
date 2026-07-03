@@ -149,7 +149,12 @@ const hasCertificateFile = Boolean(
       [name]: type === 'checkbox' ? checked : value
     }));
   }
-
+function handleDateChange(name, date) {
+  setForm((prev) => ({
+    ...prev,
+    [name]: formatDatePickerValue(date)
+  }));
+}
   async function handleCertificateFileChange(event) {
     const file = event.target.files?.[0];
 
@@ -976,6 +981,36 @@ function readFileAsDataUrl(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+function parseDatePickerValue(value) {
+  if (!value) return null;
+
+  // Dữ liệu đang lưu trong form dạng yyyy-MM-dd
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+
+    return new Date(year, month - 1, day);
+  }
+
+  // Phòng trường hợp dữ liệu đã là dd/MM/yyyy
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+    const [day, month, year] = value.split('/').map(Number);
+
+    return new Date(year, month - 1, day);
+  }
+
+  return null;
+}
+
+function formatDatePickerValue(date) {
+  if (!date) return '';
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  // Lưu trong form dạng yyyy-MM-dd để các hàm validate hiện tại vẫn chạy đúng
+  return `${year}-${month}-${day}`;
 }
 
 export default LeaveRequestForm;
