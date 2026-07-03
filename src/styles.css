@@ -3488,3 +3488,18 @@ body:has(.hr-dashboard-page) .app-shell {
     min-height: 320px;
   }
 }
+.date-picker-wrapper {
+  width: 100%;
+}
+
+.date-picker-wrapper .react-datepicker-wrapper {
+  width: 100%;
+}
+
+.date-picker-input {
+  width: 100%;
+}
+
+.date-picker-popper {
+  z-index: 9999;
+}

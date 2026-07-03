@@ -4,6 +4,8 @@ import { getLineManagers, submitLeaveRequest } from '../api';
 import Card from '../components/Card';
 import Alert from '../components/Alert';
 import Field from '../components/Field';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 import {
   DEPARTMENTS,
@@ -544,21 +546,31 @@ if (!isValidCertificateFile) {
       <Card title="2. Thông tin nghỉ phép">
         <div className="form-grid">
           <Field label="Ngày bắt đầu nghỉ *">
-            <input
-              type="date"
-              name="startDate"
-              value={form.startDate}
-              onChange={handleChange}
-              required
-            />
+            <DatePicker
+            selected={parseDatePickerValue(form.startDate)}
+            onChange={(date) => handleDateChange('startDate', date)}
+            dateFormat="dd/MM/yyyy"
+            placeholderText="dd/mm/yyyy"
+            className="date-picker-input"
+            wrapperClassName="date-picker-wrapper"
+            popperClassName="date-picker-popper"
+            showPopperArrow={false}
+            autoComplete="off"
+            required
+          />
           </Field>
 
           <Field label="Ngày quay lại làm việc *">
-            <input
-              type="date"
-              name="returnDate"
-              value={form.returnDate}
-              onChange={handleChange}
+            <DatePicker
+              selected={parseDatePickerValue(form.returnDate)}
+              onChange={(date) => handleDateChange('returnDate', date)}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="dd/mm/yyyy"
+              className="date-picker-input"
+              wrapperClassName="date-picker-wrapper"
+              popperClassName="date-picker-popper"
+              showPopperArrow={false}
+              autoComplete="off"
               required
             />
           </Field>
