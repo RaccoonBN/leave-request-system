@@ -301,9 +301,9 @@ if (!isValidCertificateFile) {
    if (form.department !== 'EC' && !form.lineManagerEmail) {
   throw new Error('Vui lòng chọn Line Manager/Manager.');
 }
- if (!form.lineManagerEmail) {
-      throw new Error('Vui lòng chọn Line Manager/Manager.');
-    }
+ if (form.department !== 'EC' && !form.lineManagerEmail) {
+  throw new Error('Vui lòng chọn Line Manager/Manager.');
+}
 
     if (!form.employeeEmail.trim()) {
       throw new Error('Vui lòng nhập email nhân sự.');
@@ -383,28 +383,27 @@ if (!isValidCertificateFile) {
 
     try {
       validateFormBeforeSubmit();
-
-      const payload = {
-        ...form,
-        fullName: form.fullName.trim(),
-        employeeCode: form.employeeCode.trim(),
-        department: form.department.trim(),
-        position: form.position.trim(),
-        employeeEmail: form.employeeEmail.trim(),
-        leaderEmail: form.leaderEmail,
-        teamLeadEmail: form.leaderEmail,
-        lineManagerEmail: form.department === 'EC' ? '' : form.lineManagerEmail,
-        startDate: formatDateVN(form.startDate),
-        returnDate: formatDateVN(form.returnDate),
-        leaveSession: leaveTimeText,
-        reason: form.reason.trim(),
-        handoverName: form.handoverName.trim(),
-        handoverEmployeeCode: form.handoverEmployeeCode.trim(),
-        handoverEmail: form.handoverEmail.trim(),
-        handoverPhone: form.handoverPhone.trim(),
-        handoverDetails: form.handoverDetails.trim(),
+    const payload = {
+      ...form,
+      fullName: form.fullName.trim(),
+      employeeCode: form.employeeCode.trim(),
+      department: form.department.trim(),
+      position: form.position.trim(),
+      employeeEmail: form.employeeEmail.trim(),
+      leaderEmail: form.leaderEmail,
+      teamLeadEmail: form.leaderEmail,
+      lineManagerEmail: form.department === 'EC' ? '' : form.lineManagerEmail,
+      startDate: formatDateVN(form.startDate),
+      returnDate: formatDateVN(form.returnDate),
+      leaveSession: leaveTimeText,
+      reason: form.reason.trim(),
+      handoverName: form.handoverName.trim(),
+      handoverEmployeeCode: form.handoverEmployeeCode.trim(),
+      handoverEmail: form.handoverEmail.trim(),
+      handoverPhone: form.handoverPhone.trim(),
+      handoverDetails: form.handoverDetails.trim(),
       hasBhxhSickLeave: hasCertificateFile
-      };
+    };
 
       const response = await submitLeaveRequest(payload);
 
