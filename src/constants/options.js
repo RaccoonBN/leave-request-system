@@ -14,12 +14,24 @@ export const LEADER_LABELS = {
   TSE: 'TSE Leader'
 };
 
+// Cấp duyệt thứ 2
+// Riêng EC: sau EC Leader sẽ đến HR Manager
 export const MANAGER_LABELS = {
   GA: 'GA Manager',
-  EC: 'EC Manager',
+  EC: 'HR Manager',
   ACA: 'ACA Manager',
   PRC: 'PRC Manager',
   TSE: 'Line Manager'
+};
+
+// Cấp duyệt cuối
+// Riêng EC: cấp cuối là Director
+export const FINAL_APPROVER_LABELS = {
+  GA: 'HR Manager',
+  EC: 'Director',
+  ACA: 'HR Manager',
+  PRC: 'HR Manager',
+  TSE: 'HR Manager'
 };
 
 export const INITIAL_LEAVE_FORM = {
@@ -29,12 +41,13 @@ export const INITIAL_LEAVE_FORM = {
   employeeEmail: '',
   employeeCode: '',
 
-  // Flow duyệt mới: mọi bộ phận đều có Leader trước Manager
+  // Flow duyệt: mọi bộ phận đều chọn Leader trước
   leaderEmail: '',
 
   // Giữ lại field cũ để không vỡ các phần code cũ nếu vẫn còn dùng teamLeadEmail
   teamLeadEmail: '',
 
+  // Với EC sẽ không cần chọn field này vì HR Manager + Director lấy mặc định từ Apps Script
   lineManagerEmail: '',
 
   leaveType: 'Nghỉ phép năm',
@@ -82,15 +95,15 @@ export const FINAL_STATUSES = [
   'Chờ ACA Leader duyệt',
   'Chờ TSE Leader duyệt',
 
-  // Manager pending
-  'Chờ EC Manager duyệt',
+  // Cấp duyệt thứ 2 pending
+  'Chờ HR Manager duyệt',
   'Chờ PRC Manager duyệt',
   'Chờ GA Manager duyệt',
   'Chờ ACA Manager duyệt',
   'Chờ Line Manager duyệt',
 
-  // HR pending
-  'Chờ HR Manager duyệt',
+  // Cấp duyệt cuối pending
+  'Chờ Director duyệt',
 
   // Approved
   'Đã duyệt',
@@ -102,19 +115,22 @@ export const FINAL_STATUSES = [
   'ACA Leader từ chối',
   'TSE Leader từ chối',
 
-  // Manager rejected
-  'EC Manager từ chối',
+  // Cấp duyệt thứ 2 rejected
+  'HR Manager từ chối',
   'PRC Manager từ chối',
   'GA Manager từ chối',
   'ACA Manager từ chối',
   'Line Manager từ chối',
 
-  // HR rejected
-  'HR Manager từ chối',
+  // Cấp duyệt cuối rejected
+  'Director từ chối',
 
   // Backward compatible status cũ
+  'Chờ EC Manager duyệt',
+  'EC Manager từ chối',
   'Chờ Leader duyệt',
-  'Leader từ chối'
+  'Leader từ chối',
+  'Line Manager từ chối'
 ];
 
 export const BHXH_SICK_LEAVE_NOTICE =

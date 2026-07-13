@@ -28,10 +28,18 @@ const LEADER_LABELS = {
 
 const MANAGER_LABELS = {
   GA: 'GA Manager',
-  EC: 'EC Manager',
+  EC: 'HR Manager',
   ACA: 'ACA Manager',
   PRC: 'PRC Manager',
   TSE: 'Line Manager'
+};
+
+const FINAL_APPROVER_LABELS = {
+  GA: 'HR Manager',
+  EC: 'Director',
+  ACA: 'HR Manager',
+  PRC: 'HR Manager',
+  TSE: 'HR Manager'
 };
 
 function HRDashboard() {
@@ -249,15 +257,17 @@ function HRDashboard() {
       'Thời gian Leader xử lý': getLeaderDecisionAt(item),
       'Lý do từ chối Leader': getLeaderRejectReason(item),
 
-      'Email Line Manager/Manager': item.lineManagerEmail,
-      'Trạng thái Line Manager/Manager': item.lineStatus,
-      'Thời gian Line Manager/Manager xử lý': item.lineDecisionAt,
-      'Lý do từ chối Line Manager/Manager': item.lineRejectReason || '',
+      'Cấp duyệt 2': getManagerLabel(item.department),
+      'Email cấp duyệt 2': item.lineManagerEmail,
+      'Trạng thái cấp duyệt 2': item.lineStatus,
+      'Thời gian cấp duyệt 2 xử lý': item.lineDecisionAt,
+      'Lý do từ chối cấp duyệt 2': item.lineRejectReason || '',
 
-      'Email HR Manager': item.hrManagerEmail,
-      'Trạng thái HR Manager': item.hrStatus,
-      'Thời gian HR Manager xử lý': item.hrDecisionAt,
-      'Lý do từ chối HR': item.hrRejectReason || '',
+      'Cấp duyệt cuối': getFinalApproverLabel(item.department),
+      'Email cấp duyệt cuối': item.hrManagerEmail,
+      'Trạng thái cấp duyệt cuối': item.hrStatus,
+      'Thời gian cấp duyệt cuối xử lý': item.hrDecisionAt,
+      'Lý do từ chối cấp duyệt cuối': item.hrRejectReason || '',
 
       'Link minh chứng nghỉ ốm BHXH': item.sickLeaveCertificateUrl || '',
 
@@ -476,8 +486,8 @@ function HRDashboard() {
                 <th>Nhân sự</th>
                 <th>Nghỉ phép</th>
                 <th>Leader</th>
-                <th>Manager</th>
-                <th>HR Manager</th>
+                <th>Cấp duyệt 2</th>
+                <th>Cấp duyệt cuối</th>
                 <th>Trạng thái</th>
                 <th>Chi tiết</th>
               </tr>
@@ -515,11 +525,11 @@ function HRDashboard() {
                     <StatusBadge status={toShortStatus(getLeaderStatus(item))} />
                   </td>
 
-                  <td data-label="Manager">
+                  <td data-label={getManagerLabel(item.department)}>
                     <StatusBadge status={toShortStatus(item.lineStatus || 'Chưa có thông tin')} />
                   </td>
 
-                  <td data-label="HR Manager">
+                  <td data-label={getFinalApproverLabel(item.department)}>
                     <StatusBadge status={toShortStatus(item.hrStatus || 'Chưa có thông tin')} />
                   </td>
 
@@ -660,10 +670,16 @@ function HRDashboard() {
                 value={selectedRequest.lineDecisionAt || 'Chưa xử lý'}
               />
 
-              <DetailItem label="Email HR Manager" value={selectedRequest.hrManagerEmail} />
-              <DetailItem label="Trạng thái HR Manager" value={selectedRequest.hrStatus} />
               <DetailItem
-                label="Thời gian HR xử lý"
+                label={`Email ${getFinalApproverLabel(selectedRequest.department)}`}
+                value={selectedRequest.hrManagerEmail}
+              />
+              <DetailItem
+                label={`Trạng thái ${getFinalApproverLabel(selectedRequest.department)}`}
+                value={selectedRequest.hrStatus}
+              />
+              <DetailItem
+                label={`Thời gian ${getFinalApproverLabel(selectedRequest.department)} xử lý`}
                 value={selectedRequest.hrDecisionAt || 'Chưa xử lý'}
               />
 
@@ -687,7 +703,7 @@ function HRDashboard() {
 
               {isMeaningfulRejectReason(selectedRequest.hrRejectReason) && (
                 <DetailItem
-                  label="Lý do HR từ chối"
+                  label={`Lý do ${getFinalApproverLabel(selectedRequest.department)} từ chối`}
                   value={selectedRequest.hrRejectReason}
                   wide
                   danger
@@ -832,6 +848,10 @@ function getLeaderLabel(department) {
 
 function getManagerLabel(department) {
   return MANAGER_LABELS[department] || 'Manager';
+}
+
+function getFinalApproverLabel(department) {
+  return FINAL_APPROVER_LABELS[department] || 'HR Manager';
 }
 
 function getLeaderEmail(item) {
