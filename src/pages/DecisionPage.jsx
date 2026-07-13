@@ -20,20 +20,14 @@ function DecisionPage() {
       role: searchParams.get('role') || '',
       decision: searchParams.get('decision') || '',
       token: searchParams.get('token') || '',
-      approver: searchParams.get('approver') || ''
+      approver: searchParams.get('approver') || '',
+      title: searchParams.get('title') || searchParams.get('approverTitle') || ''
     };
   }, []);
 
   const roleLabel = useMemo(() => {
-    if (params.approver === 'ec_leader') return 'Team Lead / EC Leader';
-    if (params.approver === 'ec_manager') return 'Line Manager / EC Manager';
-    if (params.approver === 'line_manager') return 'Line Manager';
-
-    if (params.role === 'line') return 'Line Manager';
-    if (params.role === 'hr') return 'HR Manager';
-
-    return 'Người duyệt';
-  }, [params.role, params.approver]);
+    return getApproverRoleLabel(params);
+  }, [params]);
 
   const decisionLabel = useMemo(() => {
     if (params.decision === 'approve') return 'Duyệt đơn';
@@ -42,20 +36,20 @@ function DecisionPage() {
   }, [params.decision]);
 
   const processNote = useMemo(() => {
-    if (params.approver === 'ec_leader') {
-      return 'Sau khi EC Leader duyệt, đơn sẽ được chuyển tiếp đến Line Manager / EC Manager.';
-    }
-
-    if (params.approver === 'ec_manager') {
-      return 'Sau khi EC Manager duyệt, đơn sẽ được chuyển tiếp đến HR Manager.';
-    }
-
     if (params.role === 'hr') {
-      return 'Đây là bước xử lý cấp cuối. Sau khi HR Manager duyệt hoặc từ chối, hệ thống sẽ gửi kết quả về email nhân sự.';
+      return `Đây là bước xử lý cấp cuối. Sau khi ${roleLabel} duyệt hoặc từ chối, hệ thống sẽ gửi kết quả về email nhân sự.`;
     }
 
-    return 'Sau khi Line Manager duyệt, đơn sẽ được chuyển tiếp đến HR Manager.';
-  }, [params.role, params.approver]);
+    if (params.role === 'leader') {
+      return `Sau khi ${roleLabel} duyệt, đơn sẽ được chuyển tiếp đến cấp duyệt tiếp theo.`;
+    }
+
+    if (params.role === 'line') {
+      return `Sau khi ${roleLabel} duyệt, đơn sẽ được chuyển tiếp đến cấp duyệt cuối.`;
+    }
+
+    return 'Sau khi xử lý, hệ thống sẽ cập nhật trạng thái đơn nghỉ phép.';
+  }, [params.role, roleLabel]);
 
   useEffect(() => {
     const isValid =
@@ -133,6 +127,7 @@ function DecisionPage() {
           <img src="/company-logo.png" alt="WESET" />
         </div>
       </section>
+
       <section className="approval-info-grid">
         <div className="approval-mini-card">
           <span>Vai trò xử lý</span>
@@ -288,6 +283,38 @@ function DecisionPage() {
       )}
     </div>
   );
+}
+
+function getApproverRoleLabel(params) {
+  const titleFromUrl = String(params.title || '').trim();
+
+  if (titleFromUrl) {
+    return titleFromUrl;
+  }
+
+  const approver = String(params.approver || '').trim();
+  const role = String(params.role || '').trim();
+
+  if (approver === 'director') return 'Director';
+  if (approver === 'hr_manager') return 'HR Manager';
+  if (approver === 'line_manager') return 'Line Manager/Manager';
+  if (approver === 'leader') return 'Leader';
+
+  if (approver === 'ec_leader') return 'EC Leader';
+  if (approver === 'ec_manager') return 'EC Manager';
+  if (approver === 'ga_leader') return 'GA Leader';
+  if (approver === 'ga_manager') return 'GA Manager';
+  if (approver === 'aca_leader') return 'ACA Leader';
+  if (approver === 'aca_manager') return 'ACA Manager';
+  if (approver === 'prc_leader') return 'PRC Leader';
+  if (approver === 'prc_manager') return 'PRC Manager';
+  if (approver === 'tse_leader') return 'TSE Leader';
+
+  if (role === 'leader') return 'Leader';
+  if (role === 'line') return 'Line Manager/Manager';
+  if (role === 'hr') return 'HR Manager';
+
+  return 'Người duyệt';
 }
 
 export default DecisionPage;

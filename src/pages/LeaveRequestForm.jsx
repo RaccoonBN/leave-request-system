@@ -298,7 +298,10 @@ if (!isValidCertificateFile) {
       throw new Error('Vui lòng chọn Leader.');
     }
 
-    if (!form.lineManagerEmail) {
+   if (form.department !== 'EC' && !form.lineManagerEmail) {
+  throw new Error('Vui lòng chọn Line Manager/Manager.');
+}
+ if (!form.lineManagerEmail) {
       throw new Error('Vui lòng chọn Line Manager/Manager.');
     }
 
@@ -390,7 +393,7 @@ if (!isValidCertificateFile) {
         employeeEmail: form.employeeEmail.trim(),
         leaderEmail: form.leaderEmail,
         teamLeadEmail: form.leaderEmail,
-        lineManagerEmail: form.lineManagerEmail,
+        lineManagerEmail: form.department === 'EC' ? '' : form.lineManagerEmail,
         startDate: formatDateVN(form.startDate),
         returnDate: formatDateVN(form.returnDate),
         leaveSession: leaveTimeText,
@@ -512,28 +515,37 @@ if (!isValidCertificateFile) {
             </select>
           </Field>
 
-          <Field label={`${managerLabel} *`}>
-            <select
-              name="lineManagerEmail"
-              value={form.lineManagerEmail}
-              onChange={handleChange}
-              disabled={!form.department}
-              required
-            >
-              <option value="">
-                {!form.department ? 'Chọn bộ phận trước' : `Chọn ${managerLabel}`}
-              </option>
+        {form.department !== 'EC' && (
+        <Field label={`${managerLabel} *`}>
+          <select
+            name="lineManagerEmail"
+            value={form.lineManagerEmail}
+            onChange={handleChange}
+            disabled={!form.department}
+            required={form.department !== 'EC'}
+          >
+            <option value="">
+              {!form.department ? 'Chọn bộ phận trước' : `Chọn ${managerLabel}`}
+            </option>
 
-              {lineManagerOptions.map((manager) => (
-                <option
-                  key={`${manager.email}-${manager.position}-${manager.role}-manager`}
-                  value={manager.email}
-                >
-                  {manager.label}
-                </option>
-              ))}
-            </select>
-          </Field>
+            {lineManagerOptions.map((manager) => (
+              <option
+                key={`${manager.email}-${manager.position}-${manager.role}-manager`}
+                value={manager.email}
+              >
+                {manager.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
+
+      {form.department === 'EC' && (
+        <div className="leave-preview">
+          <span>Luồng duyệt EC:</span>
+          <strong>EC Leader → HR Manager → Director</strong>
+        </div>
+      )}
 
           <Field label="Email nhân sự *">
             <input
