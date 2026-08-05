@@ -111,16 +111,6 @@ function HRDashboard() {
     setCurrentPage(1);
   }
 
-  useEffect(() => {
-    if (!loggedIn) return;
-
-    const interval = setInterval(() => {
-      fetchRequests(password, false);
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [loggedIn, password]);
-
   const filteredRequests = useMemo(() => {
     return requests.filter((item) => {
       const searchableText = [
@@ -394,12 +384,17 @@ function HRDashboard() {
         <div className="hr-list-head">
           <div>
             <p className="muted">
-              Dashboard tự cập nhật mỗi 10 giây. Dữ liệu gốc được lưu trong Google Sheet.
+              Nhấn “Làm mới” để cập nhật dữ liệu mới nhất từ Google Sheet.
             </p>
           </div>
 
           <div className="hr-list-actions">
-            <button className="btn ghost" type="button" onClick={() => fetchRequests(password, false)}>
+            <button
+              className="btn ghost"
+              type="button"
+              onClick={() => fetchRequests(password, false)}
+              disabled={loading}
+            >
               {loading ? 'Đang tải...' : 'Làm mới'}
             </button>
 
